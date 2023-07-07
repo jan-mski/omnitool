@@ -1,0 +1,3 @@
+[submodule "omnitool-definitions"]
+	path = omnitool-definitions
+	url = git@github.com:jan-mski/omnitool-definitions.git
