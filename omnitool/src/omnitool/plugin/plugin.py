@@ -1,6 +1,6 @@
 from typing import Dict
 
-from omnitooldef.plugin.definition import PluginDefinition
+from omnitool_base.plugin.definition import PluginDefinition
 from omnitool.plugin.configuration import PluginConfigurationService, ContextConfiguration
 from omnitool.plugin.finder import PluginLocation
 
