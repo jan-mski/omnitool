@@ -1,3 +1,3 @@
-[submodule "omnitool-definitions"]
-	path = omnitool-definitions
-	url = git@github.com:jan-mski/omnitool-definitions.git
+[submodule "omnitool-base"]
+	path = omnitool-base
+	url = git@github.com:jan-mski/omnitool-base.git
