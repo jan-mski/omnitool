@@ -4,6 +4,9 @@ version = "0.2.0"
 description = ""
 authors = ["jan-mski"]
 license = "GPL v3"
+packages = [
+    { include = "omnitool", from = "omnitool/src" },
+]
 
 [tool.poetry.dependencies]
 python = ">=3.11 <3.12"
