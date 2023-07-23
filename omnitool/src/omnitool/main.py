@@ -18,6 +18,7 @@ logging.basicConfig(
 def main(args):
     logger.info("Starting omnitool")
     loader.load_plugins()
+    logger.info("Omnitool started")
 
 
 if __name__ == "__main__":
