@@ -29,6 +29,8 @@ jobs:
     # CircleCI will report the results back to your VCS provider.
     steps:
       - checkout
+      - run: git submodule sync
+      - run: git submodule update --init
       - python/install-packages:
           pkg-manager: poetry # https://circleci.com/developer/orbs/orb/circleci/python#usage-work-with-poetry
       - run:
