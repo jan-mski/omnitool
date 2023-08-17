@@ -21,7 +21,7 @@ factory_boy = "^3.2"
 [tool.pytest.ini_options]
 pythonpath = [
     "omnitool/src",
-    "omnitool-base/src/omnitool_base",
+    "omnitool-base/src",
 ]
 norecursedirs = "omnitool-base"
 
