@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Dict, Type
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from omnitool_base.plugin.data import ContextResourceData, ContextResourceLocation
 
@@ -14,11 +14,11 @@ logger = logging.getLogger(__name__)
 
 
 class ContextResourceConfiguration(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     name: str
     location: ContextResourceLocation
-    data: ContextResourceData = None
-
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    data: ContextResourceData = Field(default=None, init_var=False, exclude=True)
 
 
 class ContextConfiguration(BaseModel):

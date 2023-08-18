@@ -8,6 +8,7 @@ from omnitool.plugin.configuration import (
     ContextResourceConfiguration,
     PluginConfiguration,
     _PluginConfigurationService,
+    plugin_configuration_service,
 )
 from omnitool_base.plugin.data import ContextResourceData, ContextResourceLocation
 
@@ -75,42 +76,73 @@ def configuration_model(configuration_json):
 
 
 @pytest.fixture
+def loaded_configuration_model(configuration_model):
+    loaded_configuration_model = configuration_model.model_copy(deep=True)
+
+    for resource in loaded_configuration_model.resources.values():
+        resource.data = ContextResourceDataStub(resource.location.path)
+
+    return loaded_configuration_model
+
+
+@pytest.fixture
 def configuration_service(configuration_file):
     return _PluginConfigurationService(configuration_file, ContextResourceDataStub)
 
 
-def test_load_configuration(configuration_service, configuration_model):
+class TestPluginConfiguration:
+    def test_resources(self, configuration_model):
+        assert len(configuration_model.resources) == 3
+
+        for _, context in configuration_model.contexts.items():
+            for resource_id, resource in context.resources.items():
+                assert resource_id in configuration_model.resources
+                assert resource == configuration_model.resources[resource_id]
+
+
+class TestPluginConfigurationService:
+    def test_load_configuration(self, configuration_service, loaded_configuration_model):
+        configuration_service.load_configuration()
+
+        assert configuration_service._configuration == loaded_configuration_model
+
+    def test_get_contexts(self, configuration_service, loaded_configuration_model):
+        configuration_service.load_configuration()
+
+        contexts = configuration_service.get_contexts()
+
+        assert len(contexts) == len(loaded_configuration_model.contexts)
+
+        for context_id, context in contexts.items():
+            assert context_id in loaded_configuration_model.contexts
+            assert context == loaded_configuration_model.contexts[context_id]
+
+    def test_add_resource(self, configuration_service, configuration_file, loaded_configuration_model):
+        configuration_service.load_configuration()
+
+        context_id = list(loaded_configuration_model.contexts.keys())[0]
+        resource = ContextResourceConfiguration(
+            name="New Resource",
+            location=ContextResourceLocation(type="file", path="path/to/new_resource")
+        )
+        resource_id = configuration_service.add_resource(context_id, resource)
+
+        expected_resource = resource.model_copy(update={"data": ContextResourceDataStub(resource.location.path)})
+        expected_configuration_model = loaded_configuration_model.model_copy(deep=True)
+        expected_configuration_model.contexts[context_id].resources[resource_id] = expected_resource
+
+        assert len(configuration_service._configuration.resources) == 4
+        assert len(configuration_service._configuration.contexts[context_id].resources) == 3
+        assert configuration_service._configuration.resources[resource_id] == expected_resource
+        assert configuration_file.read_text("utf-8") == expected_configuration_model.model_dump_json(indent=4)
+
+
+def test_plugin_configuration_service(configuration_service, configuration_file):
     configuration_service.load_configuration()
 
-    expected_configuration_model = configuration_model.model_copy()
-    for resource in expected_configuration_model.resources.values():
-        resource.data = ContextResourceDataStub(resource.location.path)
+    actual_configuration_service = plugin_configuration_service(configuration_file, ContextResourceDataStub)
 
-    assert configuration_service._configuration == expected_configuration_model
-
-
-def test_get_contexts(configuration_service):
-    configuration_service.load_configuration()
-    contexts = configuration_service.get_contexts()
-
-    assert isinstance(contexts, dict)
-    assert len(contexts) == 2
-    assert "context1" in contexts
-    assert "context2" in contexts
-
-
-def test_add_resource(configuration_service):
-    configuration_service.load_configuration()
-    context_id = "context1"
-    resource = ContextResourceConfiguration(
-        name="New Resource",
-        location=ContextResourceLocation(type="file", path="path/to/new_resource")
-    )
-    identifier = configuration_service.add_resource(context_id, resource)
-
-    expected_data = ContextResourceDataStub(resource.location.path)
-    expected_resource = resource.model_copy(update={"data": expected_data})
-
-    assert len(configuration_service._configuration.resources) == 4
-    assert len(configuration_service._configuration.contexts[context_id].resources) == 3
-    assert configuration_service._configuration.resources[identifier] == expected_resource
+    assert isinstance(actual_configuration_service, _PluginConfigurationService)
+    assert actual_configuration_service._configuration_file == configuration_service._configuration_file
+    assert actual_configuration_service._resource_data_type == configuration_service._resource_data_type
+    assert actual_configuration_service._configuration == configuration_service._configuration
