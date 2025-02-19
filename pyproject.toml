@@ -5,23 +5,18 @@ description = ""
 authors = ["jan-mski"]
 license = "GPL v3"
 packages = [
-    { include = "omnitool", from = "omnitool/src" },
+    { include = "omnitool" },
 ]
 
 [tool.poetry.dependencies]
 python = "~3.12"
-omnitool-plugin-base = { path = "../omnitool-plugin-base", develop = true }  # TODO: specify as real package
+omnitool-plugin-base = { path = "../omnitool-plugin-base", develop = true }
 
 [tool.poetry.dev-dependencies]
 pytest = "~8.3.4"
 pytest-mock = "~3.14.0"
 factory_boy = "~3.2"
 pytest-cov = "~6.0.0"
-
-[tool.pytest.ini_options]
-pythonpath = [
-    "omnitool/src"
-]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

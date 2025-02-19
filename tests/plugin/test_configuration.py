@@ -1,6 +1,4 @@
-from dataclasses import dataclass
 import json
-from pathlib import Path
 
 import pytest
 
@@ -10,17 +8,8 @@ from omnitool.plugin.configuration import (
     _PluginConfigurationService,
     plugin_configuration_service,
 )
-from omnitool_base.plugin.data import ContextResourceData, ContextResourceLocation
-
-
-@dataclass
-class ContextResourceDataStub(ContextResourceData):
-    def __init__(self, path: Path):
-        self.path = path
-
-    @classmethod
-    def load(cls, location: ContextResourceLocation) -> "ContextResourceData":
-        return cls(location.path)
+from omnitool_plugin_base.plugin.data import ContextResourceLocation
+import tests.plugin.utils as utils
 
 
 @pytest.fixture
@@ -80,14 +69,14 @@ def loaded_configuration_model(configuration_model):
     loaded_configuration_model = configuration_model.model_copy(deep=True)
 
     for resource in loaded_configuration_model.resources.values():
-        resource.data = ContextResourceDataStub(resource.location.path)
+        resource.data = utils.ContextResourceDataStub(resource.location.path)
 
     return loaded_configuration_model
 
 
 @pytest.fixture
 def configuration_service(configuration_file):
-    return _PluginConfigurationService(configuration_file, ContextResourceDataStub)
+    return _PluginConfigurationService(configuration_file, utils.ContextResourceDataStub)
 
 
 class TestPluginConfiguration:
@@ -127,7 +116,7 @@ class TestPluginConfigurationService:
         )
         resource_id = configuration_service.add_resource(context_id, resource)
 
-        expected_resource = resource.model_copy(update={"data": ContextResourceDataStub(resource.location.path)})
+        expected_resource = resource.model_copy(update={"data": utils.ContextResourceDataStub(resource.location.path)})
         expected_configuration_model = loaded_configuration_model.model_copy(deep=True)
         expected_configuration_model.contexts[context_id].resources[resource_id] = expected_resource
 
@@ -140,7 +129,7 @@ class TestPluginConfigurationService:
 def test_plugin_configuration_service(configuration_service, configuration_file):
     configuration_service.load_configuration()
 
-    actual_configuration_service = plugin_configuration_service(configuration_file, ContextResourceDataStub)
+    actual_configuration_service = plugin_configuration_service(configuration_file, utils.ContextResourceDataStub)
 
     assert isinstance(actual_configuration_service, _PluginConfigurationService)
     assert actual_configuration_service._configuration_file == configuration_service._configuration_file

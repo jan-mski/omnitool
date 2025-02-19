@@ -7,7 +7,7 @@ from typing import Dict, Type
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from omnitool_base.plugin.data import ContextResourceData, ContextResourceLocation
+from omnitool_plugin_base.plugin.data import ContextResourceData, ContextResourceLocation
 
 
 logger = logging.getLogger(__name__)
