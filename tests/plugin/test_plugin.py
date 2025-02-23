@@ -52,10 +52,13 @@ def test_plugin_name(plugin, plugin_definition):
 
 
 def test_plugin_get_contexts(plugin, plugin_config_service_mock, context_configuration):
-    plugin_config_service_mock.get_contexts.return_value = {"test_context": context_configuration}
-    assert plugin.get_contexts() == {"test_context": context_configuration}
+    expected_contexts = {context_configuration.name: context_configuration}
+    plugin_config_service_mock.get_contexts.return_value = expected_contexts
+
+    assert plugin.get_contexts() == expected_contexts
 
 
 def test_plugin_add_resource(plugin, plugin_config_service_mock, context_resource_configuration):
     plugin.add_resource(context_id="test_context", resource=context_resource_configuration)
+
     plugin_config_service_mock.add_resource.assert_called_once_with("test_context", context_resource_configuration)
