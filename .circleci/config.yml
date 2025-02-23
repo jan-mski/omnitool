@@ -29,7 +29,7 @@ jobs:
     # Then run your tests!
     # CircleCI will report the results back to your VCS provider.
     steps:
-      - gh/clone:
+      - clone:
           repo: https://github.com/jan-mski/omnitool-plugin-base
       - checkout
       - run: git submodule sync
