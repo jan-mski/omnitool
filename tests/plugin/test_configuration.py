@@ -1,6 +1,4 @@
-from dataclasses import dataclass
 import json
-from pathlib import Path
 
 import pytest
 
@@ -10,17 +8,8 @@ from omnitool.plugin.configuration import (
     _PluginConfigurationService,
     plugin_configuration_service,
 )
-from omnitool_base.plugin.data import ContextResourceData, ContextResourceLocation
-
-
-@dataclass
-class ContextResourceDataStub(ContextResourceData):
-    def __init__(self, path: Path):
-        self.path = path
-
-    @classmethod
-    def load(cls, location: ContextResourceLocation) -> "ContextResourceData":
-        return cls(location.path)
+from omnitool_plugin_base.plugin.data import ContextResourceLocation
+from tests.plugin.utils import ContextResourceDataStub
 
 
 @pytest.fixture
