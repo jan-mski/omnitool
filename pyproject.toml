@@ -10,7 +10,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "~3.12"
-omnitool-plugin-base = { path = "../omnitool-plugin-base", develop = true }
+omnitool-plugin-base = { git = "https://github.com/jan-mski/omnitool-plugin-base", branch = "main" }
 
 [tool.poetry.dev-dependencies]
 pytest = "~8.3.4"

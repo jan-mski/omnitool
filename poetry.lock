@@ -147,14 +147,16 @@ description = ""
 optional = false
 python-versions = "~3.12"
 files = []
-develop = true
+develop = false
 
 [package.dependencies]
 pydantic = "~2.10.6"
 
 [package.source]
-type = "directory"
-url = "../omnitool-plugin-base"
+type = "git"
+url = "https://github.com/jan-mski/omnitool-plugin-base"
+reference = "main"
+resolved_reference = "7f9d1976cd66547717fd70a60ce0ac64dd895e73"
 
 [[package]]
 name = "packaging"
@@ -394,4 +396,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.12"
-content-hash = "ad2630b40af220e0daaa37b352934274c3e317c100ad0420e367a3c93d4a9164"
+content-hash = "d19b897479337d7fa4d34274435774c8660ae488390ee4ff57e87a837474271e"
