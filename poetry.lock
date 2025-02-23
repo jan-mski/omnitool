@@ -154,7 +154,7 @@ pydantic = "~2.10.6"
 
 [package.source]
 type = "git"
-url = "https://github.com/jan-mski/omnitool-plugin-base"
+url = "git@github.com:jan-mski/omnitool-plugin-base.git"
 reference = "main"
 resolved_reference = "7f9d1976cd66547717fd70a60ce0ac64dd895e73"
 
@@ -396,4 +396,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.12"
-content-hash = "d19b897479337d7fa4d34274435774c8660ae488390ee4ff57e87a837474271e"
+content-hash = "5875591381c68b8f53c8ad0250ab8d993262a0505b2b5b1270c61cb21ef5dd65"
