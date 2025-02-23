@@ -14,7 +14,7 @@ jobs:
     steps:
       - run:
           name: Add Github's SSH key fingerprint
-          command: echo -e "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl" >> ~/.ssh/known_hosts
+          command: mkdir ~/.ssh && echo -e "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl" >> ~/.ssh/known_hosts
       - checkout
       - python/install-packages:
           pkg-manager: poetry # https://circleci.com/developer/orbs/orb/circleci/python#usage-work-with-poetry
