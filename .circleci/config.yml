@@ -10,6 +10,7 @@ orbs:
   # so you dont have to copy and paste it everywhere.
   # See the orb documentation here: https://circleci.com/developer/orbs/orb/circleci/python
   python: circleci/python@1.5.0
+  gh: circleci/github-cli@2.6
 
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/configuration-reference/#jobs
@@ -28,6 +29,8 @@ jobs:
     # Then run your tests!
     # CircleCI will report the results back to your VCS provider.
     steps:
+      - gh/clone:
+          repo: https://github.com/jan-mski/omnitool-plugin-base
       - checkout
       - run: git submodule sync
       - run: git submodule update --init
