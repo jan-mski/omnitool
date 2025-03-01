@@ -9,7 +9,7 @@ from uuid import uuid4
 
 from omnitool.plugin import finder, configuration
 from omnitool.plugin.finder import PluginLocation
-from omnitool.plugin.plugin import Plugin
+from omnitool.plugin.base import Plugin
 
 
 logger = logging.getLogger(__name__)

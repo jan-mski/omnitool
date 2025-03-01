@@ -1,8 +1,8 @@
 from pathlib import Path
 
 import pytest
-from omnitool.plugin.plugin import (Plugin, PluginConfigurationService, ContextConfiguration,
-                                    ContextResourceConfiguration)
+from omnitool.plugin.base import (Plugin, PluginConfigurationService, ContextConfiguration,
+                                  ContextResourceConfiguration)
 from omnitool.plugin.finder import PluginLocation
 from omnitool_plugin_base.plugin.data import ContextResourceLocation
 from omnitool_plugin_base.plugin.definition import PluginDefinition
