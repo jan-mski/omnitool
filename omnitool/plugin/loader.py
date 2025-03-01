@@ -7,8 +7,7 @@ from types import ModuleType
 from typing import Dict
 from uuid import uuid4
 
-from omnitool.plugin import finder
-from omnitool.plugin.configuration import PluginConfigurationService
+from omnitool.plugin import finder, configuration
 from omnitool.plugin.finder import PluginLocation
 from omnitool.plugin.plugin import Plugin
 
@@ -25,7 +24,9 @@ def load_plugins():
 
     for location in plugin_locations:
         loaded_plugin = _load_plugin(location)
-        loaded_plugins[loaded_plugin.name] = loaded_plugin
+
+        if loaded_plugin:
+            loaded_plugins[loaded_plugin.name] = loaded_plugin
 
 
 def _load_plugin(location: PluginLocation) -> Plugin:
@@ -33,14 +34,10 @@ def _load_plugin(location: PluginLocation) -> Plugin:
     definition = getattr(plugin_module, "plugin")
 
     try:
-        configuration_service = PluginConfigurationService(location.configuration_file,
-                                                           getattr(definition, "resource_data_type"))
-        configuration_service.load_configuration()
-
+        configuration_service = configuration.plugin_configuration_service(location.configuration_file,
+                                                                           getattr(definition, "resource_data_type"))
         plugin = Plugin(configuration_service, definition, location)
-
         logger.info(f"Plugin '{plugin.name}' loaded from '{location.root_dir}'.")
-
         return plugin
     except Exception as e:
         logger.error(f"Failed to load plugin from '{location.root_dir}'.", exc_info=e)
