@@ -1,6 +1,7 @@
 import logging
 import sys
 
+import settings
 from omnitool.plugin import loader
 
 
@@ -17,6 +18,7 @@ logging.basicConfig(
 
 def main(args):
     logger.info("Starting omnitool")
+    settings.load_settings()
     loader.load_plugins()
     logger.info("Omnitool started")
 
