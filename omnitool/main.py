@@ -1,7 +1,7 @@
 import logging
 import sys
 
-import settings
+from omnitool import settings
 from omnitool.plugin import loader
 
 
