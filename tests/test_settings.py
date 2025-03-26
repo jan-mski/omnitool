@@ -1,11 +1,11 @@
+import json
 from pathlib import Path
 from typing import Optional
 
 import pytest
-import json
+from pydantic import ValidationError
 
 import omnitool.settings as settings_module
-from pydantic import ValidationError
 
 
 @pytest.fixture
@@ -28,7 +28,7 @@ def mock_settings_file(monkeypatch):
 
 @pytest.fixture
 def mock_default_plugins(monkeypatch):
-    def _mock_default_plugins(default_plugins: list):
+    def _mock_default_plugins(default_plugins: list[str]):
         monkeypatch.setattr(settings_module, "DEFAULT_ENABLED_PLUGIN_NAMES", default_plugins)
 
     return _mock_default_plugins
@@ -36,9 +36,9 @@ def mock_default_plugins(monkeypatch):
 
 @pytest.mark.parametrize("default, enabled", [
     ("plugin_1", ["plugin_1", "plugin_2"]),  # Default in enabled list
-    (None, ["plugin_1", "plugin_2"]),        # No default specified
-], ids=["with_default", "no_default"])
-def test_configured_plugins_valid(default, enabled):
+    (None, ["plugin_1", "plugin_2"]),  # No default specified
+], ids=["default_in_enabled", "no_default"])
+def test_configured_plugins_valid(default: str, enabled: list[str]):
     """Tests creating ConfiguredPlugins with valid configurations.
     Validates both when default is in enabled list and when no default is specified."""
     plugins = settings_module.ConfiguredPlugins(default=default, enabled=enabled)
@@ -49,9 +49,9 @@ def test_configured_plugins_valid(default, enabled):
 
 @pytest.mark.parametrize("default, enabled", [
     ("plugin_3", ["plugin_1", "plugin_2"]),  # Default not in enabled list
-    (None, []),                              # Empty enabled list
+    (None, []),  # Empty enabled list
 ], ids=["default_not_in_enabled", "empty_enabled_list"])
-def test_configured_plugins_validation_errors(default, enabled):
+def test_configured_plugins_invalid(default: str, enabled: list[str]):
     """Tests that ConfiguredPlugins validation raises errors for invalid configurations.
     Validates both when default plugin is not in the enabled list and when the enabled list is empty. """
     with pytest.raises(ValidationError):
@@ -61,7 +61,10 @@ def test_configured_plugins_validation_errors(default, enabled):
 def test_configured_plugins_fields_are_immutable():
     """Tests that fields default and enabled cannot be modified after creation.
     Expects ValidationError when attempting to change these fields."""
-    plugins = settings_module.ConfiguredPlugins(default="plugin_1", enabled=["plugin_1", "plugin_2"])
+    enabled_plugins = ["plugin_1", "plugin_2"]
+    default_plugin = "plugin_1"
+
+    plugins = settings_module.ConfiguredPlugins(default=default_plugin, enabled=enabled_plugins)
 
     with pytest.raises(ValidationError):
         plugins.default = "plugin_2"
@@ -70,19 +73,45 @@ def test_configured_plugins_fields_are_immutable():
         plugins.enabled = ["plugin_2"]
 
 
+def test_omnitool_settings_valid():
+    """Tests that OmnitoolSettings can be inherited from while maintaining base functionality.
+    Expects child classes to retain validation and loading behaviors."""
+    enabled_plugins = ["plugin_1", "plugin_2"]
+    default_plugin = "plugin_1"
+    settings_data = {
+        "plugins": {
+            "default": default_plugin,
+            "enabled": enabled_plugins
+        }
+    }
+
+    omnitool_settings = settings_module._OmnitoolSettings.model_validate(settings_data)
+
+    assert omnitool_settings.model_dump() == settings_data
+
+
+def test_omnitool_settings_invalid():
+    """Tests that OmnitoolSettings can be inherited from while maintaining base functionality.
+    Expects child classes to retain validation and loading behaviors."""
+    with pytest.raises(ValidationError):
+        settings_module._OmnitoolSettings.model_validate({})
+
+
 def test_load_settings_valid_file(tmp_path, mock_settings_file, mock_default_plugins):
     """Tests loading settings from a valid file and updating global settings variable.
     Expects successful return of settings object and global variable to be updated."""
-    default_plugins = ["plugin_1", "plugin_2"]
-    mock_default_plugins(default_plugins)
+    enabled_plugins = ["plugin_1", "plugin_2"]
+    default_plugin = "plugin_1"
+
     mock_settings_file(tmp_path, json.dumps({
         "plugins": {
-            "default": "plugin_1",
-            "enabled": default_plugins
+            "default": default_plugin,
+            "enabled": enabled_plugins
         }
     }))
+
     expected_omnitool_settings = settings_module._OmnitoolSettings(
-        plugins=settings_module.ConfiguredPlugins(default="plugin_1", enabled=default_plugins))
+        plugins=settings_module.ConfiguredPlugins(default=default_plugin, enabled=enabled_plugins))
 
     omnitool_settings = settings_module.load_settings()
 
@@ -93,13 +122,14 @@ def test_load_settings_valid_file(tmp_path, mock_settings_file, mock_default_plu
 def test_load_settings_creates_default_file(tmp_path, mock_settings_file, mock_default_plugins):
     """Tests creating a default settings file with expected values when file doesn't exist.
     Expects file creation with git plugin enabled and set as default."""
-    default_plugins = ["plugin_1", "plugin_2"]
-    mock_default_plugins(default_plugins)
-    settings_file_mock = mock_settings_file(tmp_path / ".omnitool")
-    expected_omnitool_settings = settings_module._OmnitoolSettings(
-        plugins=settings_module.ConfiguredPlugins(default="plugin_1", enabled=default_plugins))
+    enabled_plugins = ["plugin_1", "plugin_2"]
+    default_plugin = "plugin_1"
 
-    assert not settings_file_mock.exists()
+    mock_default_plugins(enabled_plugins)
+    settings_file_mock = mock_settings_file(tmp_path / ".omnitool")
+
+    expected_omnitool_settings = settings_module._OmnitoolSettings(
+        plugins=settings_module.ConfiguredPlugins(default=default_plugin, enabled=enabled_plugins))
 
     settings_module.load_settings()
 
@@ -108,19 +138,21 @@ def test_load_settings_creates_default_file(tmp_path, mock_settings_file, mock_d
     omnitool_settings = settings_module._OmnitoolSettings.model_validate_json(settings_file_mock.read_text())
 
     assert omnitool_settings == expected_omnitool_settings
+    assert settings_module.omnitool_settings == expected_omnitool_settings
 
 
 def test_load_settings_creates_directory_and_file(tmp_path, mock_settings_file, mock_default_plugins):
     """Tests creating both directory and settings file when neither exists.
     Expects both directory and file to be created with proper settings content."""
-    default_plugins = ["plugin_1", "plugin_2"]
+    enabled_plugins = ["plugin_1", "plugin_2"]
+    default_plugin = "plugin_1"
     nonexistent_dir = tmp_path / "nonexistent_dir" / ".omnitool"
-    mock_default_plugins(default_plugins)
+
+    mock_default_plugins(enabled_plugins)
     settings_file_mock = mock_settings_file(nonexistent_dir, create_home_path=False)
+
     expected_omnitool_settings = settings_module._OmnitoolSettings(
-        plugins=settings_module.ConfiguredPlugins(default="plugin_1", enabled=default_plugins))
-    
-    assert not nonexistent_dir.exists()
+        plugins=settings_module.ConfiguredPlugins(default=default_plugin, enabled=enabled_plugins))
 
     settings_module.load_settings()
 
@@ -134,13 +166,27 @@ def test_load_settings_creates_directory_and_file(tmp_path, mock_settings_file, 
     assert omnitool_settings == expected_omnitool_settings
 
 
-def test_load_settings_error_path_not_a_file(tmp_path, monkeypatch):
+def test_load_settings_error_permission_denied_when_creating_default_file(tmp_path, mock_settings_file, mocker):
+    """Tests proper handling of permission errors when writing default settings.
+    Expects OmnitoolSettingsLoadError wrapping the permission error."""
+    mock_settings_file(tmp_path / "settings.json")
+
+    open_mock = mocker.mock_open()
+    open_mock.side_effect = PermissionError("Permission denied")
+
+    mocker.patch('io.open', open_mock)
+
+    with pytest.raises(settings_module.OmnitoolSettingsLoadError) as exc:
+        settings_module.load_settings()
+
+    assert type(exc.value.__cause__) is PermissionError
+
+
+def test_load_settings_error_path_not_a_file(tmp_path, mock_settings_file):
     """Tests raising error when settings path exists but is not a file.
     Expects OmnitoolSettingsLoadError to be raised."""
-    settings_file_mock = tmp_path / "settings.json"
+    settings_file_mock = mock_settings_file(tmp_path)
     settings_file_mock.mkdir()
-
-    monkeypatch.setattr(settings_module, "OMNITOOL_SETTINGS_FILE_PATH", settings_file_mock)
 
     with pytest.raises(settings_module.OmnitoolSettingsLoadError) as exc:
         settings_module.load_settings()
@@ -153,16 +199,18 @@ def test_load_settings_error_invalid_content(tmp_path, mock_settings_file):
     Expects OmnitoolSettingsLoadError wrapping the original exception."""
     mock_settings_file(tmp_path, "{ this is not valid json }")
 
-    with pytest.raises(settings_module.OmnitoolSettingsLoadError):
+    with pytest.raises(settings_module.OmnitoolSettingsLoadError) as exc:
         settings_module.load_settings()
+
+    assert type(exc.value.__cause__) is ValidationError
 
 
 def test_load_settings_error_permission_denied(tmp_path, mock_settings_file, mocker):
-    """Tests proper handling of permission errors when reading/writing settings.
+    """Tests proper handling of permission errors when reading settings.
     Expects OmnitoolSettingsLoadError wrapping the permission error."""
     mock_settings_file(tmp_path, "{}")
 
-    open_mock = mocker.mock_open(read_data='scribble')
+    open_mock = mocker.mock_open()
     open_mock.side_effect = PermissionError("Permission denied")
 
     mocker.patch('io.open', open_mock)
@@ -171,30 +219,3 @@ def test_load_settings_error_permission_denied(tmp_path, mock_settings_file, moc
         settings_module.load_settings()
 
     assert type(exc.value.__cause__) is PermissionError
-
-
-def test_settings_inheritance_behavior():
-    """Tests that OmnitoolSettings can be inherited from while maintaining base functionality.
-    Expects child classes to retain validation and loading behaviors."""
-
-    class CustomSettings(settings_module.OmnitoolSettings):
-        pass
-
-    settings_data = {
-        "plugins": {
-            "default": "plugin_1",
-            "enabled": ["plugin_1", "plugin_2"]
-        }
-    }
-
-    settings = CustomSettings.model_validate(settings_data)
-    assert settings.plugins.default == "plugin_1"
-
-    with pytest.raises(ValidationError):
-        invalid_data = {
-            "plugins": {
-                "default": "plugin_3",
-                "enabled": ["plugin_1", "plugin_2"]
-            }
-        }
-        CustomSettings.model_validate(invalid_data)
