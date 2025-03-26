@@ -10,6 +10,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "~3.12"
+pydantic-settings = "~2.8.1"
 omnitool-plugin-base = { git = "git@github.com:jan-mski/omnitool-plugin-base.git", branch = "main" }
 
 [tool.poetry.dev-dependencies]
