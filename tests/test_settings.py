@@ -36,7 +36,7 @@ def mock_default_plugins(monkeypatch):
 
 @pytest.mark.parametrize("default, enabled", [
     ("plugin_1", ["plugin_1", "plugin_2"]),  # Default in enabled list
-    (None, ["plugin_1", "plugin_2"]),  # No default specified
+    (None, ["plugin_1", "plugin_2"]),        # No default specified
 ], ids=["default_in_enabled", "no_default"])
 def test_configured_plugins_valid(default: str, enabled: list[str]):
     """Tests creating ConfiguredPlugins with valid configurations.
@@ -49,7 +49,7 @@ def test_configured_plugins_valid(default: str, enabled: list[str]):
 
 @pytest.mark.parametrize("default, enabled", [
     ("plugin_3", ["plugin_1", "plugin_2"]),  # Default not in enabled list
-    (None, []),  # Empty enabled list
+    (None, []),                              # Empty enabled list
 ], ids=["default_not_in_enabled", "empty_enabled_list"])
 def test_configured_plugins_invalid(default: str, enabled: list[str]):
     """Tests that ConfiguredPlugins validation raises errors for invalid configurations.
