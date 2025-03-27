@@ -5,7 +5,7 @@ from omnitool.plugin.base import (Plugin, PluginConfigurationService, ContextCon
                                   ContextResourceConfiguration)
 from omnitool.plugin.finder import PluginLocation
 from omnitool_plugin_base.plugin.data import ContextResourceLocation
-from omnitool_plugin_base.plugin.definition import PluginDefinition
+from omnitool_plugin_base.plugin.base import PluginDefinition
 from tests.plugin.utils import ContextResourceDataStub
 
 

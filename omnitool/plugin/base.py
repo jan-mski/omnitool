@@ -2,7 +2,7 @@ from typing import Dict
 
 from omnitool.plugin.configuration import PluginConfigurationService, ContextConfiguration, ContextResourceConfiguration
 from omnitool.plugin.finder import PluginLocation
-from omnitool_plugin_base.plugin.definition import PluginDefinition
+from omnitool_plugin_base.plugin.base import PluginDefinition
 
 
 class Plugin:
