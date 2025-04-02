@@ -9,14 +9,14 @@ import omnitool.settings as settings_module
 
 
 @pytest.fixture
-def mock_settings_file(monkeypatch):
+def mock_settings_file(mocker):
     def _mock_settings_file(home_path: Path, content: Optional[str] = None, create_home_path: bool = True) -> Path:
         if create_home_path:
             home_path.mkdir(parents=True, exist_ok=True)
 
         settings_file_mock = home_path / "settings.json"
-        monkeypatch.setattr(settings_module, "OMNITOOL_HOME_PATH", home_path)
-        monkeypatch.setattr(settings_module, "OMNITOOL_SETTINGS_FILE_PATH", settings_file_mock)
+        mocker.patch.object(settings_module, "OMNITOOL_HOME_PATH", home_path)
+        mocker.patch.object(settings_module, "OMNITOOL_SETTINGS_FILE_PATH", settings_file_mock)
 
         if content is not None:
             settings_file_mock.write_text(content)
@@ -27,9 +27,9 @@ def mock_settings_file(monkeypatch):
 
 
 @pytest.fixture
-def mock_default_plugins(monkeypatch):
+def mock_default_plugins(mocker):
     def _mock_default_plugins(default_plugins: list[str]):
-        monkeypatch.setattr(settings_module, "DEFAULT_ENABLED_PLUGIN_NAMES", default_plugins)
+        mocker.patch.object(settings_module, "BUILTIN_PLUGIN_NAMES", default_plugins)
 
     return _mock_default_plugins
 
@@ -166,7 +166,7 @@ def test_load_settings_creates_directory_and_file(tmp_path, mock_settings_file, 
     assert omnitool_settings == expected_omnitool_settings
 
 
-def test_load_settings_error_permission_denied_when_creating_default_file(tmp_path, mock_settings_file, mocker):
+def test_load_settings_raises_error_permission_denied_when_creating_default_file(tmp_path, mock_settings_file, mocker):
     """Tests proper handling of permission errors when writing default settings.
     Expects OmnitoolSettingsLoadError wrapping the permission error."""
     mock_settings_file(tmp_path / "settings.json")
@@ -182,7 +182,7 @@ def test_load_settings_error_permission_denied_when_creating_default_file(tmp_pa
     assert type(exc.value.__cause__) is PermissionError
 
 
-def test_load_settings_error_path_not_a_file(tmp_path, mock_settings_file):
+def test_load_settings_raises_error_when_path_not_a_file(tmp_path, mock_settings_file):
     """Tests raising error when settings path exists but is not a file.
     Expects OmnitoolSettingsLoadError to be raised."""
     settings_file_mock = mock_settings_file(tmp_path)
@@ -194,7 +194,7 @@ def test_load_settings_error_path_not_a_file(tmp_path, mock_settings_file):
     assert "does not point to a file" in str(exc.value)
 
 
-def test_load_settings_error_invalid_content(tmp_path, mock_settings_file):
+def test_load_settings_raises_error_when_invalid_content(tmp_path, mock_settings_file):
     """Tests raising error when settings file contains invalid JSON or structure.
     Expects OmnitoolSettingsLoadError wrapping the original exception."""
     mock_settings_file(tmp_path, "{ this is not valid json }")
@@ -205,7 +205,7 @@ def test_load_settings_error_invalid_content(tmp_path, mock_settings_file):
     assert type(exc.value.__cause__) is ValidationError
 
 
-def test_load_settings_error_permission_denied(tmp_path, mock_settings_file, mocker):
+def test_load_settings_raises_error_permission_denied_when_reading_file(tmp_path, mock_settings_file, mocker):
     """Tests proper handling of permission errors when reading settings.
     Expects OmnitoolSettingsLoadError wrapping the permission error."""
     mock_settings_file(tmp_path, "{}")

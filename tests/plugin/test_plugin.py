@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 from omnitool.plugin.base import (Plugin, PluginConfigurationService, ContextConfiguration,
                                   ContextResourceConfiguration)
-from omnitool.plugin.finder import PluginLocation
+from omnitool.plugin.base import PluginLocation
 from omnitool_plugin_base.plugin.data import ContextResourceLocation
 from omnitool_plugin_base.plugin.base import PluginDefinition
 from tests.plugin.utils import ContextResourceDataStub
@@ -20,10 +20,9 @@ def plugin_definition():
 
 
 @pytest.fixture
-def plugin_location():
-    return PluginLocation(root_dir=Path("/root/dir"),
-                          module_file=Path("/root/dir/plugin.py"),
-                          configuration_file=Path("/root/dir/configuration.json"))
+def plugin_location(mocker):
+    return PluginLocation(configuration_file=Path("/root/dir/configuration.json"),
+                          plugin_module=mocker.MagicMock())
 
 
 @pytest.fixture

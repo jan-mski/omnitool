@@ -9,14 +9,14 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 OMNITOOL_HOME_PATH = Path.home() / ".omnitool"
 OMNITOOL_SETTINGS_FILE_PATH = OMNITOOL_HOME_PATH / "settings.json"
-DEFAULT_ENABLED_PLUGIN_NAMES = ["git"]
+BUILTIN_PLUGIN_NAMES = ["git"]
 
 logger = logging.getLogger(__name__)
 omnitool_settings: Optional["OmnitoolSettings"] = None
 
 
 class ConfiguredPlugins(BaseModel):
-    enabled: List[str] = Field(frozen=True, min_length=1, default_factory=lambda: DEFAULT_ENABLED_PLUGIN_NAMES)
+    enabled: List[str] = Field(frozen=True, min_length=1, default_factory=lambda: BUILTIN_PLUGIN_NAMES)
     default: Optional[str] = Field(frozen=True, default_factory=lambda data: data["enabled"][0])
 
     @model_validator(mode="after")
@@ -31,6 +31,14 @@ class OmnitoolSettings(BaseSettings, abc.ABC):
     model_config = SettingsConfigDict(json_file=OMNITOOL_SETTINGS_FILE_PATH)
 
     plugins: ConfiguredPlugins
+
+    @property
+    def enabled_builtin_plugins(self) -> list[str]:
+        return [plugin for plugin in self.plugins.enabled if plugin in BUILTIN_PLUGIN_NAMES]
+
+    @property
+    def enabled_user_plugins(self):
+        return [plugin for plugin in self.plugins.enabled if plugin not in BUILTIN_PLUGIN_NAMES]
 
 
 class _OmnitoolSettings(OmnitoolSettings):
