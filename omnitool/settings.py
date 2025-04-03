@@ -9,6 +9,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 OMNITOOL_HOME_PATH = Path.home() / ".omnitool"
 OMNITOOL_SETTINGS_FILE_PATH = OMNITOOL_HOME_PATH / "settings.json"
+PLUGIN_CONFIGURATIONS_PATH = OMNITOOL_HOME_PATH / "plugins"
 BUILTIN_PLUGIN_NAMES = ["git"]
 
 logger = logging.getLogger(__name__)

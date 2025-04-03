@@ -21,7 +21,7 @@ def plugin_definition():
 
 @pytest.fixture
 def plugin_location(mocker):
-    return PluginLocation(configuration_file=Path("/root/dir/configuration.json"),
+    return PluginLocation(config_dir=Path("/root/dir/"),
                           plugin_module=mocker.MagicMock())
 
 

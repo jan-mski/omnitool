@@ -9,8 +9,6 @@ from omnitool.plugin.base import PluginLocation, PluginModule
 
 
 PLUGIN_ENTRY_POINT_GROUP = "omnitool.plugin"
-PLUGIN_CONFIGURATIONS_PATH = settings.OMNITOOL_HOME_PATH / "plugins"
-PLUGIN_CONFIGURATION_FILE_NAME = "configuration.json"
 
 logger = logging.getLogger(__name__)
 
@@ -53,27 +51,19 @@ def _find_plugin_locations(plugin_modules: list[PluginModule], plugin_names: lis
             logger.warning(f"Requested enabled plugin '{plugin_name}' is not installed - skipping")
             continue
 
-        configuration_file = _find_plugin_configuration(plugin_name)
-        locations.append(PluginLocation(configuration_file, plugin_module))
+        config_dir = _find_plugin_config_dir(plugin_name)
+        locations.append(PluginLocation(config_dir=config_dir, plugin_module=plugin_module))
 
     return locations
 
 
-def _find_plugin_configuration(plugin_name: str) -> Optional[Path]:
-    plugin_config_dir = PLUGIN_CONFIGURATIONS_PATH / plugin_name
+def _find_plugin_config_dir(plugin_name: str) -> Optional[Path]:
+    plugin_config_dir = settings.PLUGIN_CONFIGURATIONS_PATH / plugin_name
 
     if plugin_config_dir.exists() and not plugin_config_dir.is_dir():
         logger.warning(f"Plugin configuration path '{plugin_config_dir}' does not point to a directory")
         return None
 
     plugin_config_dir.mkdir(parents=True, exist_ok=True)
-    config_file = plugin_config_dir / PLUGIN_CONFIGURATION_FILE_NAME
 
-    if config_file.exists() and not config_file.is_file():
-        logger.warning(f"Plugin configuration path '{config_file}' does not point to a file")
-        return None
-
-    if not config_file.exists():
-        config_file.write_text("{}", encoding="utf-8")
-
-    return config_file
+    return plugin_config_dir
