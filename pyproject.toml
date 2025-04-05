@@ -15,12 +15,6 @@ dependencies = [
 ]
 
 [tool.poetry]
-name = "omnitool"
-version = "0.2.0"
-description = ""
-authors = [
-    "jan-mski"
-]
 packages = [
     { include = "omnitool" },
 ]
