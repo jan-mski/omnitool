@@ -15,6 +15,12 @@ dependencies = [
 ]
 
 [tool.poetry]
+name = "omnitool"
+version = "0.2.0"
+description = ""
+authors = [
+    {name = "jan-mski",email = "36985396+jan-mski@users.noreply.github.com"}
+]
 packages = [
     { include = "omnitool" },
 ]
