@@ -215,7 +215,6 @@ def test_find_plugins_ignores_invalid_configuration_directory(mock_settings,
 
     assert actual_plugin_locations == expected_plugin_locations
 
-    # Verify we get both warnings - one from _find_plugin_configuration_dir and one from find_plugins
     assert mock_logger.warning.call_count == 2
 
 
