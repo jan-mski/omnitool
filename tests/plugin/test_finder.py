@@ -154,10 +154,10 @@ def test_find_plugins_combines_builtin_and_user(mock_settings, mock_entry_points
 
     expected_plugin_locations = [
         PluginLocation(
-            config_dir=plugin_configurations_path / builtin_plugin_name,
+            configuration_dir=plugin_configurations_path / builtin_plugin_name,
             plugin_module=PluginEntryPoint(plugin_entry_points[builtin_plugin_name])),
         PluginLocation(
-            config_dir=plugin_configurations_path / user_plugin_name,
+            configuration_dir=plugin_configurations_path / user_plugin_name,
             plugin_module=PluginEntryPoint(plugin_entry_points[user_plugin_name])),
     ]
 
@@ -180,7 +180,7 @@ def test_find_plugins_skips_missing_plugins(mock_settings, mock_entry_points, mo
     mock_logger = mocker.patch.object(omnitool.plugin.finder, "logger")
 
     expected_plugin_locations = [
-        PluginLocation(config_dir=plugin_configurations_path / existing_plugin_name,
+        PluginLocation(configuration_dir=plugin_configurations_path / existing_plugin_name,
                        plugin_module=PluginEntryPoint(plugin_entry_points[existing_plugin_name]))
     ]
 
@@ -210,7 +210,7 @@ def test_find_plugins_ignores_invalid_configuration_directory(mock_settings,
     plugin_dir_path.write_text("not a directory")
 
     expected_plugin_locations = [
-        PluginLocation(config_dir=None,
+        PluginLocation(configuration_dir=None,
                        plugin_module=PluginEntryPoint(plugin_entry_points[plugin_name]))
     ]
 
@@ -239,7 +239,7 @@ def test_find_plugins_handles_duplicate_plugin_name(mock_settings,
 
     expected_plugin_locations = [
         PluginLocation(
-            config_dir=plugin_configurations_path / duplicate_plugin_name,
+            configuration_dir=plugin_configurations_path / duplicate_plugin_name,
             plugin_module=PluginEntryPoint(first_entry_point)),
     ]
 

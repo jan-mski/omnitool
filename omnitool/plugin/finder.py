@@ -30,8 +30,9 @@ def find_plugins() -> list[PluginLocation]:
     plugin_modules = _find_plugin_modules()
 
     installed_plugins : dict[str, PluginModule] = _find_installed_plugins(plugin_modules)
-    config_dirs : dict[str, Path] = _find_plugin_config_dirs(installed_plugins)
-    plugin_locations = [PluginLocation(config_dir=config_dirs[plugin_name], plugin_module=installed_plugins[plugin_name])
+    configuration_dirs : dict[str, Path] = _find_plugin_configuration_dirs(installed_plugins)
+    plugin_locations = [PluginLocation(configuration_dir=configuration_dirs[plugin_name],
+                                       plugin_module=installed_plugins[plugin_name])
                         for plugin_name in installed_plugins.keys()]
 
     return plugin_locations
@@ -72,11 +73,11 @@ def _find_installed_plugins(plugin_modules: list[PluginModule]) -> dict[str, Plu
     return installed_plugins
 
 
-def _find_plugin_config_dirs(installed_plugins: dict[str, PluginModule]) -> dict[str, Path]:
-    return {plugin_name: _find_plugin_config_dir(plugin_name) for plugin_name in installed_plugins.keys()}
+def _find_plugin_configuration_dirs(installed_plugins: dict[str, PluginModule]) -> dict[str, Path]:
+    return {plugin_name: _find_plugin_configuration_dir(plugin_name) for plugin_name in installed_plugins.keys()}
 
 
-def _find_plugin_config_dir(plugin_name: str) -> Optional[Path]:
+def _find_plugin_configuration_dir(plugin_name: str) -> Optional[Path]:
     plugin_config_dir = settings.PLUGIN_CONFIGURATIONS_PATH / plugin_name
 
     if plugin_config_dir.exists() and not plugin_config_dir.is_dir():

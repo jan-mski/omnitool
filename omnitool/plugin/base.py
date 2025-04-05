@@ -22,7 +22,7 @@ class PluginModule(ABC):
 
 @dataclass
 class PluginLocation:
-    config_dir: Optional[Path]
+    configuration_dir: Optional[Path]
     plugin_module: PluginModule
 
 
