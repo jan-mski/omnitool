@@ -197,28 +197,26 @@ def test_find_plugins_ignores_invalid_configuration_directory(mock_settings,
                                                               mocker):
     """
     Tests that find_plugins ignores a plugin configuration directory when it exists but is not a directory.
-    Expects a warning log and PluginLocation with a None configuration file.
+    Expects a warning log and the plugin to be completely skipped.
     """
     plugin_name = "test_plugin"
 
     mock_logger = mocker.patch.object(omnitool.plugin.finder, "logger")
     mock_settings([plugin_name], [])
-    plugin_entry_points = mock_entry_points([plugin_name])
+    mock_entry_points([plugin_name])
     plugin_configurations_path = mock_plugin_configurations([plugin_name], create_dirs=False)
 
     plugin_dir_path = plugin_configurations_path / plugin_name
     plugin_dir_path.write_text("not a directory")
 
-    expected_plugin_locations = [
-        PluginLocation(configuration_dir=None,
-                       plugin_module=PluginEntryPoint(plugin_entry_points[plugin_name]))
-    ]
+    expected_plugin_locations = []
 
     actual_plugin_locations = find_plugins()
 
     assert actual_plugin_locations == expected_plugin_locations
 
-    mock_logger.warning.assert_called_once()
+    # Verify we get both warnings - one from _find_plugin_configuration_dir and one from find_plugins
+    assert mock_logger.warning.call_count == 2
 
 
 def test_find_plugins_handles_duplicate_plugin_name(mock_settings,
