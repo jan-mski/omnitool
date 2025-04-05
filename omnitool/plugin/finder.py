@@ -74,7 +74,8 @@ def _find_plugin_configuration_dirs(installed_plugins: dict[str, PluginModule]) 
     return {plugin_name: _find_plugin_configuration_dir(plugin_name) for plugin_name in installed_plugins.keys()}
 
 
-def _create_plugin_locations(configuration_dirs, installed_plugins):
+def _create_plugin_locations(configuration_dirs: dict[str, Path],
+                             installed_plugins: dict[str, PluginModule]) -> list[PluginLocation]:
     plugin_locations = []
 
     for plugin_name in installed_plugins.keys():
