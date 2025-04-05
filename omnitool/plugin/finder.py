@@ -2,7 +2,7 @@ import logging
 from dataclasses import dataclass
 from importlib.metadata import EntryPoint, entry_points
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 from omnitool import settings
 from omnitool.plugin.base import PluginLocation, PluginModule
@@ -21,49 +21,69 @@ class PluginEntryPoint(PluginModule):
     def name(self) -> str:
         return self.entry_point.name
 
-    def load(self):
+    def load(self) -> None:
         super().load()
         self.entry_point.load()
 
 
-def find_plugins() -> List[PluginLocation]:
+def find_plugins() -> list[PluginLocation]:
     plugin_modules = _find_plugin_modules()
+
+    installed_plugins : dict[str, PluginModule] = _find_installed_plugins(plugin_modules)
+    config_dirs : dict[str, Path] = _find_plugin_config_dirs(installed_plugins)
+    plugin_locations = [PluginLocation(config_dir=config_dirs[plugin_name], plugin_module=installed_plugins[plugin_name])
+                        for plugin_name in installed_plugins.keys()]
+
+    return plugin_locations
+
+
+def _find_plugin_modules() -> list[PluginModule]:
+    seen_names = set()
+    plugin_modules = []
+
+    for entry_point in entry_points(group=PLUGIN_ENTRY_POINT_GROUP):
+        if entry_point.name in seen_names:
+            logger.debug(f"Skipping duplicate plugin entry point '{entry_point.name}'")
+        else:
+            plugin_modules.append(PluginEntryPoint(entry_point))
+            seen_names.add(entry_point.name)
+
+    logger.debug(f"Found plugin modules for plugins: {[plugin.name for plugin in plugin_modules]}")
+
+    return plugin_modules
+
+
+def _find_installed_plugins(plugin_modules: list[PluginModule]) -> dict[str, PluginModule]:
     omnitool_settings = settings.omnitool_settings
-
-    builtin_plugin_locations = _find_plugin_locations(plugin_modules, omnitool_settings.enabled_builtin_plugins)
-    user_plugin_locations = _find_plugin_locations(plugin_modules, omnitool_settings.enabled_user_plugins)
-
-    return builtin_plugin_locations + user_plugin_locations
-
-
-def _find_plugin_modules() -> List[PluginModule]:
-    return [PluginEntryPoint(entry_point) for entry_point in entry_points(group=PLUGIN_ENTRY_POINT_GROUP)]
-
-
-def _find_plugin_locations(plugin_modules: list[PluginModule], plugin_names: list[str]) -> List[PluginLocation]:
-    locations = []
+    enabled_plugins = omnitool_settings.enabled_builtin_plugins + omnitool_settings.enabled_user_plugins
     plugin_modules_dict = {module.name: module for module in plugin_modules}
+    installed_plugins = {}
 
-    for plugin_name in plugin_names:
+    for plugin_name in enabled_plugins:
         plugin_module = plugin_modules_dict.get(plugin_name)
 
         if not plugin_module:
             logger.warning(f"Requested enabled plugin '{plugin_name}' is not installed - skipping")
             continue
 
-        config_dir = _find_plugin_config_dir(plugin_name)
-        locations.append(PluginLocation(config_dir=config_dir, plugin_module=plugin_module))
+        logger.debug(f"Requested enabled plugin '{plugin_name}' is installed")
+        installed_plugins[plugin_name] = plugin_module
 
-    return locations
+    return installed_plugins
+
+
+def _find_plugin_config_dirs(installed_plugins: dict[str, PluginModule]) -> dict[str, Path]:
+    return {plugin_name: _find_plugin_config_dir(plugin_name) for plugin_name in installed_plugins.keys()}
 
 
 def _find_plugin_config_dir(plugin_name: str) -> Optional[Path]:
     plugin_config_dir = settings.PLUGIN_CONFIGURATIONS_PATH / plugin_name
 
     if plugin_config_dir.exists() and not plugin_config_dir.is_dir():
-        logger.warning(f"Plugin configuration path '{plugin_config_dir}' does not point to a directory")
+        logger.warning(f"Plugin configuration path '{plugin_config_dir}' does not point to a directory, ignoring")
         return None
 
     plugin_config_dir.mkdir(parents=True, exist_ok=True)
+    logger.debug(f"Plugin configuration directory for '{plugin_name}' is '{plugin_config_dir}'")
 
     return plugin_config_dir

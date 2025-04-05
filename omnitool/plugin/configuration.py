@@ -84,11 +84,11 @@ class _PluginConfigurationService(PluginConfigurationService):
             self._configuration = PluginConfiguration()
             self._save_configuration()
         elif not self._configuration_file.is_file():
-            logger.warning(f"Configuration file '{self._configuration_file}' is not a file")
+            logger.warning(f"Configuration file '{self._configuration_file}' is not a file, ignoring")
             self._configuration = PluginConfiguration()
         else:
-            configuration_text = self._configuration_file.read_text(encoding="utf-8")
-            self._configuration = PluginConfiguration.model_validate_json(configuration_text)
+            configuration_json = self._configuration_file.read_text(encoding="utf-8")
+            self._configuration = PluginConfiguration.model_validate_json(configuration_json)
             logger.debug("Configuration file read successfully")
 
     def _load_data(self) -> None:

@@ -1,7 +1,7 @@
 import abc
 import logging
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional
 
 from pydantic import BaseModel, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -17,7 +17,7 @@ omnitool_settings: Optional["OmnitoolSettings"] = None
 
 
 class ConfiguredPlugins(BaseModel):
-    enabled: List[str] = Field(frozen=True, min_length=1, default_factory=lambda: BUILTIN_PLUGIN_NAMES)
+    enabled: list[str] = Field(frozen=True, min_length=1, default_factory=lambda: BUILTIN_PLUGIN_NAMES)
     default: Optional[str] = Field(frozen=True, default_factory=lambda data: data["enabled"][0])
 
     @model_validator(mode="after")
