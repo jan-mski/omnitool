@@ -1,69 +1,89 @@
 import logging
 from dataclasses import dataclass
+from importlib.metadata import EntryPoint, entry_points
 from pathlib import Path
-from typing import List
+from typing import Optional
+
+from omnitool import settings
+from omnitool.plugin.base import PluginLocation, PluginModule
 
 
-BUILTIN_PLUGINS_RELATIVE_PATH = "plugin/builtin"
-USER_PLUGINS_RELATIVE_PATH = ".omnitool/plugins"
-PLUGIN_MODULE_FILE_NAME = "plugin.py"
-PLUGIN_CONFIGURATION_FILE_NAME = "configuration.json"
+PLUGIN_ENTRY_POINT_GROUP = "omnitool.plugin"
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
-class PluginLocation:
-    root_dir: Path
-    module_file: Path
-    configuration_file: Path
+class PluginEntryPoint(PluginModule):
+    entry_point: EntryPoint
+
+    @property
+    def name(self) -> str:
+        return self.entry_point.name
+
+    def load(self) -> None:
+        super().load()
+        self.entry_point.load()
 
 
-def find_plugins(app_root_dir: Path) -> List[PluginLocation]:
-    possible_builtin_plugin_dir = app_root_dir / BUILTIN_PLUGINS_RELATIVE_PATH
-    possible_user_plugin_dir = Path.home() / USER_PLUGINS_RELATIVE_PATH
+def find_plugins() -> list[PluginLocation]:
+    plugin_modules = _find_plugin_modules()
 
-    builtin_plugins = _find_plugins(possible_builtin_plugin_dir)
-    user_plugins = _find_plugins(possible_user_plugin_dir)
-
-    return builtin_plugins + user_plugins
-
-
-def _find_plugins(possible_plugin_dir: Path):
-    plugin_locations = []
-
-    if not possible_plugin_dir.exists():
-        logger.info(f"Directory does not exist: '{possible_plugin_dir}' - creating.")
-        possible_plugin_dir.mkdir(parents=True)
-
-        return plugin_locations
-
-    for possible_plugin_dir in possible_plugin_dir.iterdir():
-        plugin_location = _find_plugin(possible_plugin_dir)
-
-        if plugin_location:
-            plugin_locations.append(plugin_location)
+    installed_plugins : dict[str, PluginModule] = _find_installed_plugins(plugin_modules)
+    config_dirs : dict[str, Path] = _find_plugin_config_dirs(installed_plugins)
+    plugin_locations = [PluginLocation(config_dir=config_dirs[plugin_name], plugin_module=installed_plugins[plugin_name])
+                        for plugin_name in installed_plugins.keys()]
 
     return plugin_locations
 
 
-def _find_plugin(possible_plugin_dir: Path) -> PluginLocation | None:
-    if not possible_plugin_dir.is_dir():
-        logger.info(f"Not a valid plugin directory: '{possible_plugin_dir}': not a directory.")
-        return
+def _find_plugin_modules() -> list[PluginModule]:
+    seen_names = set()
+    plugin_modules = []
 
-    module_file = possible_plugin_dir / PLUGIN_MODULE_FILE_NAME
-    if not module_file.exists():
-        logger.info(f"Not a valid plugin directory: '{possible_plugin_dir}': missing module file.")
-        return
+    for entry_point in entry_points(group=PLUGIN_ENTRY_POINT_GROUP):
+        if entry_point.name in seen_names:
+            logger.debug(f"Skipping duplicate plugin entry point '{entry_point.name}'")
+        else:
+            plugin_modules.append(PluginEntryPoint(entry_point))
+            seen_names.add(entry_point.name)
 
-    configuration_file = possible_plugin_dir / PLUGIN_CONFIGURATION_FILE_NAME
-    if not configuration_file.exists():
-        logger.info(f"Not a valid plugin directory: '{possible_plugin_dir}': missing configuration file.")
-        return
+    logger.debug(f"Found plugin modules for plugins: {[plugin.name for plugin in plugin_modules]}")
 
-    return PluginLocation(
-        root_dir=possible_plugin_dir,
-        module_file=module_file,
-        configuration_file=configuration_file
-    )
+    return plugin_modules
+
+
+def _find_installed_plugins(plugin_modules: list[PluginModule]) -> dict[str, PluginModule]:
+    omnitool_settings = settings.omnitool_settings
+    enabled_plugins = omnitool_settings.enabled_builtin_plugins + omnitool_settings.enabled_user_plugins
+    plugin_modules_dict = {module.name: module for module in plugin_modules}
+    installed_plugins = {}
+
+    for plugin_name in enabled_plugins:
+        plugin_module = plugin_modules_dict.get(plugin_name)
+
+        if not plugin_module:
+            logger.warning(f"Requested enabled plugin '{plugin_name}' is not installed - skipping")
+            continue
+
+        logger.debug(f"Requested enabled plugin '{plugin_name}' is installed")
+        installed_plugins[plugin_name] = plugin_module
+
+    return installed_plugins
+
+
+def _find_plugin_config_dirs(installed_plugins: dict[str, PluginModule]) -> dict[str, Path]:
+    return {plugin_name: _find_plugin_config_dir(plugin_name) for plugin_name in installed_plugins.keys()}
+
+
+def _find_plugin_config_dir(plugin_name: str) -> Optional[Path]:
+    plugin_config_dir = settings.PLUGIN_CONFIGURATIONS_PATH / plugin_name
+
+    if plugin_config_dir.exists() and not plugin_config_dir.is_dir():
+        logger.warning(f"Plugin configuration path '{plugin_config_dir}' does not point to a directory, ignoring")
+        return None
+
+    plugin_config_dir.mkdir(parents=True, exist_ok=True)
+    logger.debug(f"Plugin configuration directory for '{plugin_name}' is '{plugin_config_dir}'")
+
+    return plugin_config_dir
