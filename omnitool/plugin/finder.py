@@ -28,12 +28,9 @@ class PluginEntryPoint(PluginModule):
 
 def find_plugins() -> list[PluginLocation]:
     plugin_modules = _find_plugin_modules()
-
-    installed_plugins : dict[str, PluginModule] = _find_installed_plugins(plugin_modules)
-    configuration_dirs : dict[str, Path] = _find_plugin_configuration_dirs(installed_plugins)
-    plugin_locations = [PluginLocation(configuration_dir=configuration_dirs[plugin_name],
-                                       plugin_module=installed_plugins[plugin_name])
-                        for plugin_name in installed_plugins.keys()]
+    installed_plugins = _find_installed_plugins(plugin_modules)
+    configuration_dirs = _find_plugin_configuration_dirs(installed_plugins)
+    plugin_locations = _create_plugin_locations(configuration_dirs, installed_plugins)
 
     return plugin_locations
 
@@ -75,6 +72,25 @@ def _find_installed_plugins(plugin_modules: list[PluginModule]) -> dict[str, Plu
 
 def _find_plugin_configuration_dirs(installed_plugins: dict[str, PluginModule]) -> dict[str, Path]:
     return {plugin_name: _find_plugin_configuration_dir(plugin_name) for plugin_name in installed_plugins.keys()}
+
+
+def _create_plugin_locations(configuration_dirs: dict[str, Path],
+                             installed_plugins: dict[str, PluginModule]) -> list[PluginLocation]:
+    plugin_locations = []
+
+    for plugin_name in installed_plugins.keys():
+        configuration_dir = configuration_dirs[plugin_name]
+
+        if configuration_dir is None:
+            logger.warning(f"Skipping plugin '{plugin_name}' due to missing/invalid configuration directory")
+            continue
+
+        plugin_locations.append(PluginLocation(
+            configuration_dir=configuration_dir,
+            plugin_module=installed_plugins[plugin_name]
+        ))
+
+    return plugin_locations
 
 
 def _find_plugin_configuration_dir(plugin_name: str) -> Optional[Path]:
