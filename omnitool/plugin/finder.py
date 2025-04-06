@@ -81,8 +81,8 @@ def _create_plugin_locations(configuration_dirs: dict[str, Path],
     for plugin_name in installed_plugins.keys():
         configuration_dir = configuration_dirs[plugin_name]
 
-        if configuration_dir is None:
-            logger.warning(f"Skipping plugin '{plugin_name}' due to missing/invalid configuration directory")
+        if not _is_configuration_dir_valid(configuration_dir):
+            logger.warning(f"Skipping plugin '{plugin_name}' due to invalid configuration directory")
             continue
 
         plugin_locations.append(PluginLocation(
@@ -94,13 +94,19 @@ def _create_plugin_locations(configuration_dirs: dict[str, Path],
 
 
 def _find_plugin_configuration_dir(plugin_name: str) -> Optional[Path]:
-    plugin_config_dir = settings.PLUGIN_CONFIGURATIONS_PATH / plugin_name
+    configuration_dir = settings.PLUGIN_CONFIGURATIONS_PATH / plugin_name
 
-    if plugin_config_dir.exists() and not plugin_config_dir.is_dir():
-        logger.warning(f"Plugin configuration path '{plugin_config_dir}' does not point to a directory, ignoring")
-        return None
+    if not configuration_dir.exists():
+        configuration_dir.mkdir(parents=True)
 
-    plugin_config_dir.mkdir(parents=True, exist_ok=True)
-    logger.debug(f"Plugin configuration directory for '{plugin_name}' is '{plugin_config_dir}'")
+    logger.debug(f"Plugin configuration directory for '{plugin_name}' is '{configuration_dir}'")
 
-    return plugin_config_dir
+    return configuration_dir
+
+
+def _is_configuration_dir_valid(configuration_dir: Path) -> bool:
+    if configuration_dir.exists() and not configuration_dir.is_dir():
+        logger.warning(f"Plugin configuration directory '{configuration_dir}' is not a directory")
+        return False
+
+    return True
