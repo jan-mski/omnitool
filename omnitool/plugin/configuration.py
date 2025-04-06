@@ -52,6 +52,11 @@ class PluginConfigurationService(ABC):
         pass
 
 
+class PluginConfigurationLoadWarning(UserWarning):
+    def __init__(self, additional_info: str):
+        super().__init__(f"Could not load plugin: {additional_info}")
+
+
 class _PluginConfigurationService(PluginConfigurationService):
     _configuration_file: Path
     _configuration: PluginConfiguration
@@ -84,8 +89,7 @@ class _PluginConfigurationService(PluginConfigurationService):
             self._configuration = PluginConfiguration()
             self._save_configuration()
         elif not self._configuration_file.is_file():
-            logger.warning(f"Configuration file '{self._configuration_file}' is not a file, ignoring")
-            self._configuration = PluginConfiguration()
+            raise PluginConfigurationLoadWarning(f"Configuration file '{self._configuration_file}' is not a file")
         else:
             configuration_json = self._configuration_file.read_text(encoding="utf-8")
             self._configuration = PluginConfiguration.model_validate_json(configuration_json)

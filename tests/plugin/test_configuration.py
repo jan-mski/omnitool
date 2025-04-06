@@ -8,6 +8,7 @@ from omnitool.plugin.configuration import (
     PluginConfiguration,
     _PluginConfigurationService,
     plugin_configuration_service,
+    PluginConfigurationLoadWarning,
 )
 from omnitool_plugin_base.plugin.data import ContextResourceLocation
 from tests.plugin.utils import ContextResourceDataStub
@@ -162,6 +163,22 @@ def test_load_configuration_nonexistent_file(create_configuration_file):
     assert configuration_service.get_contexts() == {}
     assert configuration_file.is_file()
     assert configuration_file.read_text(encoding="utf-8") == expected_file_content
+
+def test_load_configuration_not_a_file(tmp_path):
+    """
+    Tests that loading from a path that is not a file raises an exception.
+    Expects the exception to be raised when the configuration path is a directory.
+    """
+    configuration_dir = tmp_path / "config_dir"
+    configuration_dir.mkdir()
+
+    configuration_service = _PluginConfigurationService(configuration_file=configuration_dir,
+                                                        resource_data_type=ContextResourceDataStub)
+
+    with pytest.raises(PluginConfigurationLoadWarning) as exc_info:
+        configuration_service.load_configuration()
+
+    assert f"Configuration file '{configuration_dir}' is not a file" in str(exc_info.value)
 
 def test_get_contexts(configuration_service, loaded_configuration_model):
     """
