@@ -1,10 +1,13 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict
 
 from omnitool.plugin.configuration import PluginConfigurationService, ContextConfiguration, ContextResourceConfiguration
 from omnitool_plugin_base.plugin.base import PluginDefinition
+
+
+PLUGIN_CONFIGURATION_FILE_NAME = "configuration.json"
 
 
 class PluginModule(ABC):
@@ -22,8 +25,12 @@ class PluginModule(ABC):
 
 @dataclass
 class PluginLocation:
-    configuration_dir: Optional[Path]
+    configuration_dir: Path
     plugin_module: PluginModule
+
+    @property
+    def configuration_file(self):
+        return self.configuration_dir / PLUGIN_CONFIGURATION_FILE_NAME
 
 
 class Plugin:

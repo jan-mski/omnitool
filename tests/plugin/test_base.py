@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 from omnitool.plugin.base import (Plugin, PluginConfigurationService, ContextConfiguration,
-                                  ContextResourceConfiguration)
+                                  ContextResourceConfiguration, PLUGIN_CONFIGURATION_FILE_NAME)
 from omnitool.plugin.base import PluginLocation
 from omnitool_plugin_base.plugin.data import ContextResourceLocation
 from omnitool_plugin_base.plugin.base import PluginDefinition
@@ -61,3 +61,9 @@ def test_plugin_add_resource(plugin, plugin_config_service_mock, context_resourc
     plugin.add_resource(context_id="test_context", resource=context_resource_configuration)
 
     plugin_config_service_mock.add_resource.assert_called_once_with("test_context", context_resource_configuration)
+
+
+def test_plugin_location_configuration_file(plugin_location):
+    expected_file = plugin_location.configuration_dir / PLUGIN_CONFIGURATION_FILE_NAME
+
+    assert plugin_location.configuration_file == expected_file
