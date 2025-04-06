@@ -1,8 +1,29 @@
-from typing import Dict
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Dict, Optional
 
 from omnitool.plugin.configuration import PluginConfigurationService, ContextConfiguration, ContextResourceConfiguration
-from omnitool.plugin.finder import PluginLocation
-from omnitool_plugin_base.plugin.definition import PluginDefinition
+from omnitool_plugin_base.plugin.base import PluginDefinition
+
+
+class PluginModule(ABC):
+    loaded: bool = False
+
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        pass
+
+    @abstractmethod
+    def load(self) -> None:
+        self.loaded = True
+
+
+@dataclass
+class PluginLocation:
+    configuration_dir: Optional[Path]
+    plugin_module: PluginModule
 
 
 class Plugin:
