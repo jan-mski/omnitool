@@ -9,9 +9,6 @@ from pydantic import BaseModel, ConfigDict, Field
 from omnitool_plugin_base.plugin.data import ContextResourceData, ContextResourceLocation
 
 
-PLUGIN_CONFIGURATION_FILE_NAME = "configuration.json"
-
-
 logger = logging.getLogger(__name__)
 
 
@@ -60,8 +57,8 @@ class _PluginConfigurationService(PluginConfigurationService):
     _configuration: PluginConfiguration
     _resource_data_type: Type[ContextResourceData]
 
-    def __init__(self, configuration_dir: Path, resource_data_type: Type[ContextResourceData]):
-        self._configuration_file = configuration_dir / PLUGIN_CONFIGURATION_FILE_NAME
+    def __init__(self, configuration_file: Path, resource_data_type: Type[ContextResourceData]):
+        self._configuration_file = configuration_file
         self._resource_data_type = resource_data_type
 
     def load_configuration(self) -> None:
@@ -117,9 +114,9 @@ class _PluginConfigurationService(PluginConfigurationService):
         logger.debug("Configuration saved successfully")
 
 
-def plugin_configuration_service(configuration_dir: Path,
+def plugin_configuration_service(configuration_file: Path,
                                  resource_data_type: Type[ContextResourceData]) -> PluginConfigurationService:
-    configuration_service = _PluginConfigurationService(configuration_dir, resource_data_type)
+    configuration_service = _PluginConfigurationService(configuration_file, resource_data_type)
     configuration_service.load_configuration()
 
     return configuration_service

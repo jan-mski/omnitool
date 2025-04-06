@@ -90,7 +90,7 @@ def configuration_service(create_configuration_file):
     """
     configuration_file = create_configuration_file()
 
-    return _PluginConfigurationService(configuration_dir=configuration_file.parent,
+    return _PluginConfigurationService(configuration_file=configuration_file,
                                        resource_data_type=ContextResourceDataStub)
 
 
@@ -153,7 +153,7 @@ def test_load_configuration_nonexistent_file(create_configuration_file):
     Expects an empty configuration to be created and the configuration file to be written.
     """
     configuration_file = create_configuration_file(write=False)
-    configuration_service = _PluginConfigurationService(configuration_dir=configuration_file.parent,
+    configuration_service = _PluginConfigurationService(configuration_file=configuration_file,
                                                         resource_data_type=ContextResourceDataStub)
     expected_file_content = PluginConfiguration().model_dump_json(indent=2)
 
@@ -211,7 +211,7 @@ def test_plugin_configuration_service(configuration_service, create_configuratio
     configuration_service.load_configuration()
 
     configuration_file = create_configuration_file()
-    actual_configuration_service = plugin_configuration_service(configuration_dir=configuration_file.parent,
+    actual_configuration_service = plugin_configuration_service(configuration_file=configuration_file,
                                                                 resource_data_type=ContextResourceDataStub)
 
     assert isinstance(actual_configuration_service, _PluginConfigurationService)
