@@ -1,65 +1,54 @@
 import logging
-import sys
-from importlib.util import spec_from_file_location, module_from_spec
-from os.path import splitext
-from pathlib import Path
-from types import ModuleType
-from typing import Dict
-from uuid import uuid4
+
+from omnitool_plugin_base.plugin.base import PluginDefinition
 
 from omnitool.plugin import finder, configuration
-from omnitool.plugin.finder import PluginLocation
 from omnitool.plugin.base import Plugin
+from omnitool.plugin.finder import PluginLocation
+from omnitool.plugin.configuration import PluginConfigurationService
 
 
 logger = logging.getLogger(__name__)
+loaded_plugins: dict[str, Plugin] = {}
 
 
-def load_plugins():
-    plugin_locations = finder.find_plugins()
+def load_plugins() -> None:
+    """
+    Finds and loads all available plugins.
+    """
+    global loaded_plugins
+    loaded_plugins = {}
+
+    plugin_locations: list[PluginLocation] = finder.find_plugins()
 
     if not plugin_locations:
-        logger.info("No plugins found.")
+        logger.warning("No plugins available to load")
         return
 
     for location in plugin_locations:
-        loaded_plugin = _load_plugin(location)
+        try:
+            loaded_plugin: Plugin = _load_plugin(location)
 
-        if loaded_plugin:
-            loaded_plugins[loaded_plugin.name] = loaded_plugin
+            if loaded_plugin:
+                loaded_plugins[loaded_plugin.name] = loaded_plugin
+                logger.info(f"Plugin '{loaded_plugin.name}' loaded from '{location.plugin_module.source}'")
+        except Exception as e:
+            logger.warning(f"Failed to load plugin {location.plugin_name}' "
+                           f"from {location.plugin_module.source}: {str(e)}")
+            logger.debug(e)
 
 
 def _load_plugin(location: PluginLocation) -> Plugin:
-    plugin_module = _import_module(location.module_file, _generate_module_name(location.module_file))
-    definition = getattr(plugin_module, "plugin")
+    plugin_definition: PluginDefinition = location.load_module()
+    _validate_plugin_definition(plugin_definition)
 
-    try:
-        configuration_service = configuration.plugin_configuration_service(location.configuration_file,
-                                                                           getattr(definition, "resource_data_type"))
-        plugin = Plugin(configuration_service, definition, location)
-        logger.info(f"Plugin '{plugin.name}' loaded from '{location.root_dir}'.")
-        return plugin
-    except Exception as e:
-        logger.error(f"Failed to load plugin from '{location.root_dir}'.", exc_info=e)
+    configuration_service: PluginConfigurationService = configuration.plugin_configuration_service(
+        configuration_file=location.configuration_file,
+        resource_data_type=plugin_definition.resource_data_type)
+
+    return Plugin(configuration_service, plugin_definition, location)
 
 
-def _import_module(module_file: Path, module_name: str) -> ModuleType:
-    spec = spec_from_file_location(module_name, module_file)
-    module = module_from_spec(spec)
-
-    sys.modules[module_name] = module
-    spec.loader.exec_module(module)
-
-    return module
-
-
-def _generate_module_name(module_file: Path) -> str:
-    module_dir_name = module_file.parent.name
-    module_file_name, _ = splitext(module_file.name)
-
-    clean_module_file_name = module_file_name.replace("\\", "_")
-
-    return f"{module_dir_name}-{clean_module_file_name}-{uuid4()}"
-
-
-loaded_plugins: Dict[str, Plugin] = {}
+def _validate_plugin_definition(plugin_definition: PluginDefinition) -> None:
+    if not isinstance(plugin_definition, PluginDefinition):
+        raise ValueError("Plugin definition must be of type PluginDefinition")

@@ -20,6 +20,11 @@ def main(args):
     logger.info("Starting omnitool")
     settings.load_settings()
     loader.load_plugins()
+
+    if not loader.loaded_plugins:
+        logger.error("No plugins loaded, exiting")
+        return
+
     logger.info("Omnitool started")
 
 

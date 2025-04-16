@@ -85,7 +85,6 @@ def context_configuration(context_resource_configuration):
 def test_plugin_name(plugin, plugin_definition):
     """
     Tests that the plugin's name property correctly returns the name from the plugin definition.
-    
     Expects the plugin name to match the name in the plugin definition.
     """
     assert plugin.name == plugin_definition.name
@@ -94,7 +93,6 @@ def test_plugin_name(plugin, plugin_definition):
 def test_plugin_get_contexts(plugin, plugin_config_service_mock, context_configuration):
     """
     Tests that the plugin's get_contexts method correctly delegates to the configuration service.
-    
     Expects the plugin to return the contexts from the configuration service.
     """
     expected_contexts = {context_configuration.name: context_configuration}
@@ -106,7 +104,6 @@ def test_plugin_get_contexts(plugin, plugin_config_service_mock, context_configu
 def test_plugin_add_resource(plugin, plugin_config_service_mock, context_resource_configuration):
     """
     Tests that the plugin's add_resource method correctly delegates to the configuration service.
-    
     Expects the plugin to call the configuration service's add_resource with the correct arguments.
     """
     plugin.add_resource(context_id="test_context", resource=context_resource_configuration)
@@ -117,9 +114,17 @@ def test_plugin_add_resource(plugin, plugin_config_service_mock, context_resourc
 def test_plugin_location_configuration_file(plugin_location):
     """
     Tests that the plugin_location's configuration_file property correctly returns the expected path.
-    
     Expects the configuration_file to be the configuration directory joined with configuration file name.
     """
     expected_file = plugin_location.configuration_dir / PLUGIN_CONFIGURATION_FILE_NAME
 
     assert plugin_location.configuration_file == expected_file
+
+def test_plugin_location_plugin_name(plugin_location):
+    """
+    Tests that the plugin_location's plugin_name property correctly returns the name of the plugin module.
+    Expects the plugin_name to be the name of the plugin module.
+    """
+    expected_name = plugin_location.plugin_module.name
+
+    assert plugin_location.plugin_name == expected_name

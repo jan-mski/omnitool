@@ -18,6 +18,10 @@ class PluginEntryPoint(PluginModule):
     entry_point: EntryPoint
 
     @property
+    def source(self) -> str:
+        return str(self.entry_point)
+
+    @property
     def name(self) -> str:
         return self.entry_point.name
 
@@ -27,10 +31,17 @@ class PluginEntryPoint(PluginModule):
 
 
 def find_plugins() -> list[PluginLocation]:
+    logger.info("Searching for plugins...")
+
     plugin_modules = _find_plugin_modules()
     installed_plugins = _find_installed_plugins(plugin_modules)
     configuration_dirs = _find_plugin_configuration_dirs(installed_plugins)
     plugin_locations = _create_plugin_locations(configuration_dirs, installed_plugins)
+
+    if plugin_locations:
+        logger.info(f"Plugins found: {[location.plugin_name for location in plugin_locations]}")
+    else:
+        logger.info("No plugins found")
 
     return plugin_locations
 

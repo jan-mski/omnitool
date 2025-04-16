@@ -15,12 +15,17 @@ class PluginModule(ABC):
 
     @property
     @abstractmethod
+    def source(self) -> str:
+        pass
+
+    @property
+    @abstractmethod
     def name(self) -> str:
         pass
 
     @abstractmethod
-    def load(self) -> None:
-        self.loaded = True
+    def load(self) -> PluginDefinition:
+        self.loaded = True  # TODO: if loaded is True, do not do anything? but then it won't return a value...
 
 
 @dataclass
@@ -29,8 +34,15 @@ class PluginLocation:
     plugin_module: PluginModule
 
     @property
+    def plugin_name(self) -> str:
+        return self.plugin_module.name
+
+    @property
     def configuration_file(self):
         return self.configuration_dir / PLUGIN_CONFIGURATION_FILE_NAME
+
+    def load_module(self) -> PluginDefinition:
+        return self.plugin_module.load()
 
 
 class Plugin:
