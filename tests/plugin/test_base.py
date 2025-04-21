@@ -15,7 +15,7 @@ def plugin_config_service_mock(mocker):
     Creates a mock PluginConfigurationService for testing.
     
     Returns:
-        Mock: A mocked PluginConfigurationService instance
+        MagicMock: A mocked PluginConfigurationService instance
     """
     return mocker.MagicMock(spec=PluginConfigurationService)
 

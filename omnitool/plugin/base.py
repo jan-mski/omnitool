@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field, InitVar
 from pathlib import Path
 from typing import Dict
 
@@ -45,18 +45,15 @@ class PluginLocation:
         return self.plugin_module.load()
 
 
+@dataclass
 class Plugin:
+    _configuration_service: PluginConfigurationService = field(init=False, repr=False)
+    configuration_service: InitVar[PluginConfigurationService]
     definition: PluginDefinition
     location: PluginLocation
-    _configuration_service: PluginConfigurationService
 
-    def __init__(self,
-                 configuration_service: PluginConfigurationService,
-                 definition: PluginDefinition,
-                 location: PluginLocation):
+    def __post_init__(self, configuration_service):
         self._configuration_service = configuration_service
-        self.definition = definition
-        self.location = location
 
     @property
     def name(self) -> str:
