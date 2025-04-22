@@ -9,9 +9,6 @@ from pydantic import BaseModel, ConfigDict, Field
 from omnitool_plugin_base.plugin.data import ContextResourceData, ContextResourceLocation
 
 
-PLUGIN_CONFIGURATION_FILE_NAME = "configuration.json"
-
-
 logger = logging.getLogger(__name__)
 
 
@@ -55,13 +52,18 @@ class PluginConfigurationService(ABC):
         pass
 
 
+class PluginConfigurationLoadError(Exception):
+    def __init__(self, additional_info: str):
+        super().__init__(f"Could not load plugin: {additional_info}")
+
+
 class _PluginConfigurationService(PluginConfigurationService):
     _configuration_file: Path
     _configuration: PluginConfiguration
     _resource_data_type: Type[ContextResourceData]
 
-    def __init__(self, configuration_dir: Path, resource_data_type: Type[ContextResourceData]):
-        self._configuration_file = configuration_dir / PLUGIN_CONFIGURATION_FILE_NAME
+    def __init__(self, configuration_file: Path, resource_data_type: Type[ContextResourceData]):
+        self._configuration_file = configuration_file
         self._resource_data_type = resource_data_type
 
     def load_configuration(self) -> None:
@@ -87,8 +89,7 @@ class _PluginConfigurationService(PluginConfigurationService):
             self._configuration = PluginConfiguration()
             self._save_configuration()
         elif not self._configuration_file.is_file():
-            logger.warning(f"Configuration file '{self._configuration_file}' is not a file, ignoring")
-            self._configuration = PluginConfiguration()
+            raise PluginConfigurationLoadError(f"Configuration file '{self._configuration_file}' is not a file")
         else:
             configuration_json = self._configuration_file.read_text(encoding="utf-8")
             self._configuration = PluginConfiguration.model_validate_json(configuration_json)
@@ -117,9 +118,9 @@ class _PluginConfigurationService(PluginConfigurationService):
         logger.debug("Configuration saved successfully")
 
 
-def plugin_configuration_service(configuration_dir: Path,
+def plugin_configuration_service(configuration_file: Path,
                                  resource_data_type: Type[ContextResourceData]) -> PluginConfigurationService:
-    configuration_service = _PluginConfigurationService(configuration_dir, resource_data_type)
+    configuration_service = _PluginConfigurationService(configuration_file, resource_data_type)
     configuration_service.load_configuration()
 
     return configuration_service

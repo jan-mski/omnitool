@@ -8,6 +8,7 @@ from omnitool.plugin.configuration import (
     PluginConfiguration,
     _PluginConfigurationService,
     plugin_configuration_service,
+    PluginConfigurationLoadError,
 )
 from omnitool_plugin_base.plugin.data import ContextResourceLocation
 from tests.plugin.utils import ContextResourceDataStub
@@ -90,7 +91,7 @@ def configuration_service(create_configuration_file):
     """
     configuration_file = create_configuration_file()
 
-    return _PluginConfigurationService(configuration_dir=configuration_file.parent,
+    return _PluginConfigurationService(configuration_file=configuration_file,
                                        resource_data_type=ContextResourceDataStub)
 
 
@@ -153,7 +154,7 @@ def test_load_configuration_nonexistent_file(create_configuration_file):
     Expects an empty configuration to be created and the configuration file to be written.
     """
     configuration_file = create_configuration_file(write=False)
-    configuration_service = _PluginConfigurationService(configuration_dir=configuration_file.parent,
+    configuration_service = _PluginConfigurationService(configuration_file=configuration_file,
                                                         resource_data_type=ContextResourceDataStub)
     expected_file_content = PluginConfiguration().model_dump_json(indent=2)
 
@@ -162,6 +163,22 @@ def test_load_configuration_nonexistent_file(create_configuration_file):
     assert configuration_service.get_contexts() == {}
     assert configuration_file.is_file()
     assert configuration_file.read_text(encoding="utf-8") == expected_file_content
+
+def test_load_configuration_not_a_file(tmp_path):
+    """
+    Tests that loading from a path that is not a file raises an exception.
+    Expects the exception to be raised when the configuration path is a directory.
+    """
+    configuration_dir = tmp_path / "config_dir"
+    configuration_dir.mkdir()
+
+    configuration_service = _PluginConfigurationService(configuration_file=configuration_dir,
+                                                        resource_data_type=ContextResourceDataStub)
+
+    with pytest.raises(PluginConfigurationLoadError) as exc_info:
+        configuration_service.load_configuration()
+
+    assert f"Configuration file '{configuration_dir}' is not a file" in str(exc_info.value)
 
 def test_get_contexts(configuration_service, loaded_configuration_model):
     """
@@ -211,7 +228,7 @@ def test_plugin_configuration_service(configuration_service, create_configuratio
     configuration_service.load_configuration()
 
     configuration_file = create_configuration_file()
-    actual_configuration_service = plugin_configuration_service(configuration_dir=configuration_file.parent,
+    actual_configuration_service = plugin_configuration_service(configuration_file=configuration_file,
                                                                 resource_data_type=ContextResourceDataStub)
 
     assert isinstance(actual_configuration_service, _PluginConfigurationService)
