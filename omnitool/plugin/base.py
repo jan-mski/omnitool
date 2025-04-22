@@ -25,7 +25,7 @@ class PluginModule(ABC):
 
     @abstractmethod
     def load(self) -> PluginDefinition:
-        self.loaded = True  # TODO: if loaded is True, do not do anything? but then it won't return a value...
+        self.loaded = True
 
 
 @dataclass
