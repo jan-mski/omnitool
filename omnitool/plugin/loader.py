@@ -25,28 +25,28 @@ def load_plugins() -> None:
         logger.warning("No plugins available to load")
         return
 
-    for location in plugin_locations:
+    for plugin_location in plugin_locations:
         try:
-            loaded_plugin: Plugin = _load_plugin(location)
+            loaded_plugin: Plugin = _load_plugin(plugin_location)
 
             if loaded_plugin:
                 loaded_plugins[loaded_plugin.name] = loaded_plugin
-                logger.info(f"Plugin '{loaded_plugin.name}' loaded from '{location.plugin_module.source}'")
+                logger.info(f"Plugin '{loaded_plugin.name}' loaded from '{plugin_location.plugin_module.source}'")
         except Exception as e:
-            logger.warning(f"Failed to load plugin {location.plugin_name}' "
-                           f"from {location.plugin_module.source}: {str(e)}")
+            logger.warning(f"Failed to load plugin '{plugin_location.plugin_name}' "
+                           f"from {plugin_location.plugin_module.source}: {str(e)}")
             logger.debug(e)
 
 
-def _load_plugin(location: PluginLocation) -> Plugin:
-    plugin_definition: PluginDefinition = location.load_module()
+def _load_plugin(plugin_location: PluginLocation) -> Plugin:
+    plugin_definition: PluginDefinition = plugin_location.load_module()
     _validate_plugin_definition(plugin_definition)
 
     configuration_service: PluginConfigurationService = configuration.plugin_configuration_service(
-        configuration_file=location.configuration_file,
+        configuration_file=plugin_location.configuration_file,
         resource_data_type=plugin_definition.resource_data_type)
 
-    return Plugin(configuration_service, plugin_definition, location)
+    return Plugin(configuration_service, plugin_definition, plugin_location)
 
 
 def _validate_plugin_definition(plugin_definition: PluginDefinition) -> None:

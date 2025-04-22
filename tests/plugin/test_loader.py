@@ -70,8 +70,7 @@ def mock_find_plugins(mocker) -> callable:
         if plugin_locations is None:
             plugin_locations = []
 
-        mock = mocker.patch.object(omnitool.plugin.finder, "find_plugins", return_value=plugin_locations)
-        return mock
+        mocker.patch.object(omnitool.plugin.finder, "find_plugins", return_value=plugin_locations)
 
     return _mock_find_plugins
 
@@ -81,11 +80,10 @@ def mock_configuration_service_factory(mocker):
     def _mock_configuration_service_factory(configuration_services: list[PluginConfigurationService]):
         """
         Sets up the plugin_configuration_service mock to return the specified 
-        configuration services as side effects.
+        configuration services.
         
         Args:
-            configuration_services: List of configuration service mocks to be
-                                         returned as side effects.
+            configuration_services: List of configuration service mocks to be returned.
         """
         configuration_service_mock = mocker.patch.object(omnitool.plugin.configuration, "plugin_configuration_service")
         configuration_service_mock.side_effect = configuration_services
@@ -98,7 +96,7 @@ def test_load_plugins_no_plugins_found(mock_find_plugins, logger_mock):
     Tests the behavior when no plugins are available to load.
     Expects the function to log a warning and return without loading anything.
     """
-    mock_find_plugins()
+    mock_find_plugins([])
 
     loader.load_plugins()
 
@@ -220,7 +218,7 @@ def test_load_plugins_multiple_plugins_with_exceptions(mocker,
 def test_load_plugins_all_plugins_fail(mock_plugin_location, mock_find_plugins, logger_mock):
     """
     Tests the scenario where all plugins fail to load.
-    Expects appropriate error logging for each plugin and an empty loaded_plugins dictionary.
+    Expects appropriate warning log for each plugin and an empty loaded_plugins dictionary.
     """
     bad_plugin1_name = "bad_plugin1"
     bad_plugin1_location_mock = mock_plugin_location(
@@ -275,11 +273,9 @@ def test_load_plugins_resets_loaded_plugins(mocker,
         plugin_definition=plugin2_definition
     )
 
-    mock_find_plugins([plugin1_location_mock])
-
     plugin1_configuration_service_mock = mocker.MagicMock()
-    plugin2_configuration_service_mock = mocker.MagicMock()
     mock_configuration_service_factory([plugin1_configuration_service_mock])
+    mock_find_plugins([plugin1_location_mock])
 
     loader.load_plugins()
 
@@ -293,8 +289,9 @@ def test_load_plugins_resets_loaded_plugins(mocker,
 
     assert loader.loaded_plugins == expected_plugins
 
-    mock_find_plugins([plugin2_location_mock])
+    plugin2_configuration_service_mock = mocker.MagicMock()
     mock_configuration_service_factory([plugin2_configuration_service_mock])
+    mock_find_plugins([plugin2_location_mock])
 
     loader.load_plugins()
 

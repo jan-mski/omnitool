@@ -52,7 +52,7 @@ class Plugin:
     definition: PluginDefinition
     location: PluginLocation
 
-    def __post_init__(self, configuration_service):
+    def __post_init__(self, configuration_service: PluginConfigurationService):
         self._configuration_service = configuration_service
 
     @property

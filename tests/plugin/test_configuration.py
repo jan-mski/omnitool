@@ -8,7 +8,7 @@ from omnitool.plugin.configuration import (
     PluginConfiguration,
     _PluginConfigurationService,
     plugin_configuration_service,
-    PluginConfigurationLoadWarning,
+    PluginConfigurationLoadError,
 )
 from omnitool_plugin_base.plugin.data import ContextResourceLocation
 from tests.plugin.utils import ContextResourceDataStub
@@ -175,7 +175,7 @@ def test_load_configuration_not_a_file(tmp_path):
     configuration_service = _PluginConfigurationService(configuration_file=configuration_dir,
                                                         resource_data_type=ContextResourceDataStub)
 
-    with pytest.raises(PluginConfigurationLoadWarning) as exc_info:
+    with pytest.raises(PluginConfigurationLoadError) as exc_info:
         configuration_service.load_configuration()
 
     assert f"Configuration file '{configuration_dir}' is not a file" in str(exc_info.value)

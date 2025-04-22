@@ -215,7 +215,7 @@ def test_find_plugins_ignores_invalid_configuration_directory(mock_settings,
 
     assert actual_plugin_locations == expected_plugin_locations
 
-    assert mock_logger.warning.call_count == 2
+    assert mock_logger.warning.call_count == 1
 
 
 def test_find_plugins_handles_duplicate_plugin_name(mock_settings,

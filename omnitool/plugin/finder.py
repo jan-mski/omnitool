@@ -92,14 +92,16 @@ def _create_plugin_locations(configuration_dirs: dict[str, Path],
     for plugin_name in installed_plugins.keys():
         configuration_dir = configuration_dirs[plugin_name]
 
-        if not _is_configuration_dir_valid(configuration_dir):
-            logger.warning(f"Skipping plugin '{plugin_name}' due to invalid configuration directory")
-            continue
+        try:
+            _validate_configuration_dir(configuration_dir)
 
-        plugin_locations.append(PluginLocation(
-            configuration_dir=configuration_dir,
-            plugin_module=installed_plugins[plugin_name]
-        ))
+            plugin_locations.append(PluginLocation(
+                configuration_dir=configuration_dir,
+                plugin_module=installed_plugins[plugin_name]
+            ))
+        except Exception as e:
+            logger.warning(f"Skipping invalid plugin '{plugin_name}': {str(e)}")
+            logger.debug(e)
 
     return plugin_locations
 
@@ -115,9 +117,6 @@ def _find_plugin_configuration_dir(plugin_name: str) -> Optional[Path]:
     return configuration_dir
 
 
-def _is_configuration_dir_valid(configuration_dir: Path) -> bool:
+def _validate_configuration_dir(configuration_dir: Path):
     if configuration_dir.exists() and not configuration_dir.is_dir():
-        logger.warning(f"Plugin configuration directory '{configuration_dir}' is not a directory")
-        return False
-
-    return True
+        raise ValueError(f"Plugin configuration directory '{configuration_dir}' is not a directory")
