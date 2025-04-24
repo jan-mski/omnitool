@@ -25,17 +25,21 @@ def load_plugins() -> None:
         logger.warning("No plugins available to load")
         return
 
+    logger.info("Loading plugins...")
+
     for plugin_location in plugin_locations:
         try:
             loaded_plugin: Plugin = _load_plugin(plugin_location)
 
             if loaded_plugin:
                 loaded_plugins[loaded_plugin.name] = loaded_plugin
-                logger.info(f"Plugin '{loaded_plugin.name}' loaded from '{plugin_location.plugin_module.source}'")
+                logger.debug(f"Plugin '{loaded_plugin.name}' loaded from '{plugin_location.plugin_module.source}'")
         except Exception as e:
             logger.warning(f"Failed to load plugin '{plugin_location.plugin_name}' "
                            f"from {plugin_location.plugin_module.source}: {str(e)}")
             logger.debug(e)
+
+    logger.info(f"Plugins loaded: {list(loaded_plugins.keys())}")
 
 
 def _load_plugin(plugin_location: PluginLocation) -> Plugin:

@@ -54,7 +54,7 @@ class OmnitoolSettingsLoadError(Exception):
 def load_settings() -> OmnitoolSettings:
     global omnitool_settings
 
-    logger.info("Loading Omnitool settings")
+    logger.info("Loading Omnitool settings...")
 
     if not OMNITOOL_SETTINGS_FILE_PATH.exists():
         logger.info("No Omnitool configuration file found, creating default")
