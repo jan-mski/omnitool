@@ -5,8 +5,10 @@ from pathlib import Path
 import pytest
 
 import omnitool.plugin
-from omnitool.plugin.finder import PluginEntryPoint, find_plugins
 from omnitool.plugin.base import PluginModule, PluginLocation
+from omnitool.plugin.finder import PluginEntryPoint, find_plugins
+from omnitool_plugin_base.plugin.base import PluginDefinition
+from tests.plugin.utils import ContextResourceDataStub
 
 
 @pytest.fixture
@@ -27,6 +29,7 @@ def mock_settings(mocker):
         settings_mock.omnitool_settings.enabled_user_plugins = enabled_user_plugins or []
 
     return _mock_settings
+
 
 @pytest.fixture
 def mock_entry_point(mocker):
@@ -130,10 +133,14 @@ def test_plugin_entry_point_load(mocker):
     Expects both superclass load and entry_point.load to be executed.
     """
     entry_point = mocker.Mock()
+    plugin_definition = PluginDefinition(name="test_plugin", resource_data_type=ContextResourceDataStub)
+    entry_point.load.return_value = plugin_definition
     plugin_entry_point = PluginEntryPoint(entry_point=entry_point)
     super_load_mock = mocker.patch.object(PluginModule, "load")
 
-    plugin_entry_point.load()
+    loaded_plugin_definition = plugin_entry_point.load()
+
+    assert loaded_plugin_definition == plugin_definition
 
     super_load_mock.assert_called_once()
     entry_point.load.assert_called_once()

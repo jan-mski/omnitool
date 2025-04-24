@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Optional
 
 from omnitool import settings
-from omnitool.plugin.base import PluginLocation, PluginModule
+from omnitool.plugin.base import PluginLocation, PluginModule, PluginDefinition
 
 
 PLUGIN_ENTRY_POINT_GROUP = "omnitool.plugin"
@@ -25,9 +25,9 @@ class PluginEntryPoint(PluginModule):
     def name(self) -> str:
         return self.entry_point.name
 
-    def load(self) -> None:
+    def load(self) -> PluginDefinition:
         super().load()
-        self.entry_point.load()
+        return self.entry_point.load()
 
 
 def find_plugins() -> list[PluginLocation]:
