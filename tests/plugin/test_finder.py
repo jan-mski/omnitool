@@ -1,4 +1,3 @@
-from collections import OrderedDict
 from importlib.metadata import EntryPoint
 from pathlib import Path
 
@@ -72,7 +71,7 @@ def mock_entry_points(mock_entry_point, mock_entry_points_function):
         Returns:
             A dictionary mapping plugin names to their mocked EntryPoint objects
         """
-        plugin_entry_points = OrderedDict()
+        plugin_entry_points = {}
         for plugin_name in enabled_plugins or []:
             entry_point_mock = mock_entry_point(plugin_name)
             plugin_entry_points[plugin_name] = entry_point_mock
