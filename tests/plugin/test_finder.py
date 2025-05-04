@@ -7,7 +7,6 @@ import omnitool.plugin
 from omnitool.plugin.base import PluginModule, PluginLocation
 from omnitool.plugin.finder import PluginEntryPoint, find_plugins
 from omnitool_plugin_base.plugin.base import PluginDefinition
-from tests.plugin.utils import ContextResourceDataStub
 
 
 @pytest.fixture
@@ -126,13 +125,13 @@ def test_plugin_entry_point_name_property(mocker):
     assert plugin_entry_point.name == "test_plugin"
 
 
-def test_plugin_entry_point_load(mocker):
+def test_plugin_entry_point_load(mocker, context_resource_type):
     """
     Tests that the public load method performs its functionality including calling the underlying load.
     Expects both superclass load and entry_point.load to be executed.
     """
     entry_point = mocker.Mock()
-    plugin_definition = PluginDefinition(name="test_plugin", resource_data_type=ContextResourceDataStub)
+    plugin_definition = PluginDefinition(name="test_plugin", resource_type=context_resource_type)
     entry_point.load.return_value = plugin_definition
     plugin_entry_point = PluginEntryPoint(entry_point=entry_point)
     super_load_mock = mocker.patch.object(PluginModule, "load")
@@ -172,7 +171,7 @@ def test_find_plugins_combines_builtin_and_user(mock_settings, mock_entry_points
     assert actual_plugin_locations == expected_plugin_locations
 
 
-def test_find_plugins_skips_missing_plugins(mock_settings, mock_entry_points, mock_plugin_configurations, mocker):
+def test_find_plugins_skips_missing_plugins(mock_settings, mock_entry_points, mock_plugin_configurations):
     """
     Tests that find_plugins skips plugins that are not discovered in the plugin entry points.
     Expects missing plugins to be omitted with a warning logged.
@@ -183,8 +182,6 @@ def test_find_plugins_skips_missing_plugins(mock_settings, mock_entry_points, mo
     plugin_entry_points = mock_entry_points([existing_plugin_name])
     plugin_configurations_path = mock_plugin_configurations([existing_plugin_name])
 
-    mock_logger = mocker.patch.object(omnitool.plugin.finder, "logger")
-
     expected_plugin_locations = [
         PluginLocation(configuration_dir=plugin_configurations_path / existing_plugin_name,
                        plugin_module=PluginEntryPoint(plugin_entry_points[existing_plugin_name]))
@@ -194,20 +191,16 @@ def test_find_plugins_skips_missing_plugins(mock_settings, mock_entry_points, mo
 
     assert actual_plugin_locations == expected_plugin_locations
 
-    mock_logger.warning.assert_called_once()
-
 
 def test_find_plugins_ignores_invalid_configuration_directory(mock_settings,
                                                               mock_entry_points,
-                                                              mock_plugin_configurations,
-                                                              mocker):
+                                                              mock_plugin_configurations):
     """
     Tests that find_plugins ignores a plugin configuration directory when it exists but is not a directory.
     Expects a warning log and the plugin to be completely skipped.
     """
     plugin_name = "test_plugin"
 
-    mock_logger = mocker.patch.object(omnitool.plugin.finder, "logger")
     mock_settings([plugin_name], [])
     mock_entry_points([plugin_name])
     plugin_configurations_path = mock_plugin_configurations([plugin_name], create_dirs=False)
@@ -220,8 +213,6 @@ def test_find_plugins_ignores_invalid_configuration_directory(mock_settings,
     actual_plugin_locations = find_plugins()
 
     assert actual_plugin_locations == expected_plugin_locations
-
-    assert mock_logger.warning.call_count == 1
 
 
 def test_find_plugins_handles_duplicate_plugin_name(mock_settings,

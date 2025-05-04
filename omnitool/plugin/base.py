@@ -1,9 +1,8 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field, InitVar
 from pathlib import Path
-from typing import Dict
 
-from omnitool.plugin.configuration import PluginConfigurationService, ContextConfiguration, ContextResourceConfiguration
+from omnitool.plugin.configuration import PluginConfigurationService
 from omnitool_plugin_base.plugin.base import PluginDefinition
 
 
@@ -58,9 +57,3 @@ class Plugin:
     @property
     def name(self) -> str:
         return self.definition.name
-
-    def get_contexts(self) -> Dict[str, ContextConfiguration]:
-        return self._configuration_service.get_contexts()
-
-    def add_resource(self, context_id: str, resource: ContextResourceConfiguration):
-        self._configuration_service.add_resource(context_id, resource)

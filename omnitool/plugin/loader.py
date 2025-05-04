@@ -47,7 +47,7 @@ def _load_plugin(plugin_location: PluginLocation) -> Plugin:
 
     configuration_service: PluginConfigurationService = configuration.plugin_configuration_service(
         configuration_file=plugin_location.configuration_file,
-        resource_data_type=plugin_definition.resource_data_type)
+        resource_type=plugin_definition.resource_type)
 
     return Plugin(configuration_service, plugin_definition, plugin_location)
 
@@ -55,3 +55,5 @@ def _load_plugin(plugin_location: PluginLocation) -> Plugin:
 def _validate_plugin_definition(plugin_definition: PluginDefinition) -> None:
     if not isinstance(plugin_definition, PluginDefinition):
         raise ValueError("Plugin definition must be of type PluginDefinition")
+    if plugin_definition.operations and not plugin_definition.resource_type:
+        raise ValueError("Plugin resource_type must be defined when operations are present")
