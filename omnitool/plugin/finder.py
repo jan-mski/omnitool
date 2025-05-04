@@ -31,7 +31,7 @@ class PluginEntryPoint(PluginModule):
 
 
 def find_plugins() -> list[PluginLocation]:
-    logger.info("Searching for plugins...")
+    logger.debug("Searching for plugins...")
 
     plugin_modules = _find_plugin_modules()
     installed_plugins = _find_installed_plugins(plugin_modules)
@@ -39,9 +39,9 @@ def find_plugins() -> list[PluginLocation]:
     plugin_locations = _create_plugin_locations(configuration_dirs, installed_plugins)
 
     if plugin_locations:
-        logger.info(f"Plugins found: {[location.plugin_name for location in plugin_locations]}")
+        logger.debug(f"Plugins found: {[location.plugin_name for location in plugin_locations]}")
     else:
-        logger.info("No plugins found")
+        logger.debug("No plugins found")
 
     return plugin_locations
 
@@ -72,7 +72,7 @@ def _find_installed_plugins(plugin_modules: list[PluginModule]) -> dict[str, Plu
         plugin_module = plugin_modules_dict.get(plugin_name)
 
         if not plugin_module:
-            logger.warning(f"Requested enabled plugin '{plugin_name}' is not installed - skipping")
+            logger.debug(f"Requested enabled plugin '{plugin_name}' is not installed - skipping")
             continue
 
         logger.debug(f"Requested enabled plugin '{plugin_name}' is installed")
@@ -100,8 +100,7 @@ def _create_plugin_locations(configuration_dirs: dict[str, Path],
                 plugin_module=installed_plugins[plugin_name]
             ))
         except Exception as e:
-            logger.warning(f"Skipping invalid plugin '{plugin_name}': {str(e)}")
-            logger.debug(e)
+            logger.debug(f"Skipping invalid plugin '{plugin_name}'", e)
 
     return plugin_locations
 

@@ -22,10 +22,10 @@ def load_plugins() -> None:
     plugin_locations: list[PluginLocation] = finder.find_plugins()
 
     if not plugin_locations:
-        logger.warning("No plugins available to load")
+        logger.debug("No plugins available to load")
         return
 
-    logger.info("Loading plugins...")
+    logger.debug("Loading plugins...")
 
     for plugin_location in plugin_locations:
         try:
@@ -35,11 +35,10 @@ def load_plugins() -> None:
                 loaded_plugins[loaded_plugin.name] = loaded_plugin
                 logger.debug(f"Plugin '{loaded_plugin.name}' loaded from '{plugin_location.plugin_module.source}'")
         except Exception as e:
-            logger.warning(f"Failed to load plugin '{plugin_location.plugin_name}' "
-                           f"from {plugin_location.plugin_module.source}: {str(e)}")
-            logger.debug(e)
+            logger.debug(f"Failed to load plugin '{plugin_location.plugin_name}' "
+                         f"from {plugin_location.plugin_module.source}", e)
 
-    logger.info(f"Plugins loaded: {list(loaded_plugins.keys())}")
+    logger.debug(f"Plugins loaded: {list(loaded_plugins.keys())}")
 
 
 def _load_plugin(plugin_location: PluginLocation) -> Plugin:
