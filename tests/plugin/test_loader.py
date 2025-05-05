@@ -297,3 +297,26 @@ def test_load_plugins_resets_loaded_plugins(mocker,
     }
 
     assert loader.loaded_plugins == expected_plugins
+
+
+def test_load_plugins_invalid_plugin_definition_type(mock_plugin_location, mock_find_plugins, context_resource_type):
+    """
+    Tests validation that the plugin definition is of the correct type.
+    Expects the faulty plugin to be skipped and not loaded.
+    """
+    plugin_name = "invalid_plugin"
+    plugin_definition = PluginDefinition(name=plugin_name, resource_type=context_resource_type)
+
+    invalid_plugin_location = mock_plugin_location(
+        plugin_name=plugin_name,
+        source="/path/to/invalid_plugin",
+        configuration_dir="/path/to/invalid_plugin_config",
+        plugin_definition=plugin_definition
+    )
+    invalid_plugin_location.load_module.return_value = "This is not a PluginDefinition object"
+    
+    mock_find_plugins([invalid_plugin_location])
+    
+    loader.load_plugins()
+    
+    assert loader.loaded_plugins == {}
