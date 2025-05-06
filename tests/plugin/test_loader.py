@@ -320,3 +320,30 @@ def test_load_plugins_invalid_plugin_definition_type(mock_plugin_location, mock_
     loader.load_plugins()
     
     assert loader.loaded_plugins == {}
+
+
+def test_load_plugins_plugin_definition_missing_resource_type(
+        mock_plugin_location, mock_find_plugins, context_resource_type):
+    """
+    Tests the scenario where a plugin definition is missing the resource_type.
+    Expects the plugin to be skipped and not loaded.
+    """
+    plugin_name = "missing_resource_type_plugin"
+    plugin_definition = PluginDefinition()
+
+    @plugin_definition.resource_operation
+    def some_operation():
+        pass
+
+    missing_resource_type_location = mock_plugin_location(
+        plugin_name=plugin_name,
+        source="/path/to/missing_resource_type_plugin",
+        configuration_dir="/path/to/missing_resource_type_plugin_config",
+        plugin_definition=plugin_definition
+    )
+
+    mock_find_plugins([missing_resource_type_location])
+
+    loader.load_plugins()
+
+    assert loader.loaded_plugins == {}

@@ -55,3 +55,5 @@ def _load_plugin(plugin_location: PluginLocation) -> Plugin:
 def _validate_plugin_definition(plugin_definition: PluginDefinition) -> None:
     if not isinstance(plugin_definition, PluginDefinition):
         raise ValueError("Plugin definition must be of type PluginDefinition")
+    if plugin_definition.resource_operations and not plugin_definition.resource_type:
+        raise ValueError("Plugin resource_type must be defined when resource operations are present")
