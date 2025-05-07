@@ -25,7 +25,7 @@ def plugin_definition(context_resource_type):
     Returns:
         PluginDefinition: A plugin definition for testing
     """
-    return PluginDefinition(resource_type=context_resource_type)
+    return PluginDefinition(name="test_plugin", resource_type=context_resource_type)
 
 
 @pytest.fixture
@@ -36,11 +36,8 @@ def plugin_location(mocker):
     Returns:
         PluginLocation: A plugin location for testing
     """
-    plugin_module_mock = mocker.MagicMock()
-    plugin_module_mock.name = "test_plugin"
-
     return PluginLocation(configuration_dir=Path("/root/dir/"),
-                          plugin_module=plugin_module_mock)
+                          plugin_module=mocker.MagicMock())
 
 
 @pytest.fixture
@@ -58,12 +55,12 @@ def plugin(plugin_config_service_mock, plugin_definition, plugin_location):
     )
 
 
-def test_plugin_name(plugin, plugin_location):
+def test_plugin_name(plugin, plugin_definition):
     """
     Tests that the plugin's name property correctly returns the name from the plugin definition.
     Expects the plugin name to match the name in the plugin definition.
     """
-    assert plugin.name == plugin_location.plugin_name
+    assert plugin.name == plugin_definition.name
 
 
 def test_plugin_location_configuration_file(plugin_location):

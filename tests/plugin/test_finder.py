@@ -131,7 +131,7 @@ def test_plugin_entry_point_load(mocker, context_resource_type):
     Expects both superclass load and entry_point.load to be executed.
     """
     entry_point = mocker.Mock()
-    plugin_definition = PluginDefinition(resource_type=context_resource_type)
+    plugin_definition = PluginDefinition(name="test_plugin", resource_type=context_resource_type)
     entry_point.load.return_value = plugin_definition
     plugin_entry_point = PluginEntryPoint(entry_point=entry_point)
     super_load_mock = mocker.patch.object(PluginModule, "load")

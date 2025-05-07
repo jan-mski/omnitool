@@ -56,4 +56,4 @@ class Plugin:
 
     @property
     def name(self) -> str:
-        return self.location.plugin_name
+        return self.definition.name
