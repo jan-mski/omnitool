@@ -2,19 +2,20 @@ from pathlib import Path
 
 import pytest
 
-from omnitool.plugin.base import (Plugin, PluginConfigurationService, PLUGIN_CONFIGURATION_FILE_NAME, PluginLocation)
+from omnitool.plugin.base import (Plugin, PLUGIN_CONFIGURATION_FILE_NAME, PluginLocation)
 from omnitool_plugin_base.plugin.base import PluginDefinition
+from omnitool.plugin.configuration import PluginConfiguration
 
 
 @pytest.fixture
-def plugin_config_service_mock(mocker):
+def plugin_configuration_mock(mocker):
     """
-    Creates a mock PluginConfigurationService for testing.
+    Creates a mock PluginConfiguration for testing.
     
     Returns:
-        MagicMock: A mocked PluginConfigurationService instance
+        MagicMock: A mocked PluginConfiguration instance
     """
-    return mocker.MagicMock(spec=PluginConfigurationService)
+    return mocker.MagicMock(spec=PluginConfiguration)
 
 
 @pytest.fixture
@@ -41,7 +42,7 @@ def plugin_location(mocker):
 
 
 @pytest.fixture
-def plugin(plugin_config_service_mock, plugin_definition, plugin_location):
+def plugin(plugin_configuration_mock, plugin_definition, plugin_location):
     """
     Creates a Plugin instance using the provided fixtures.
     
@@ -49,7 +50,7 @@ def plugin(plugin_config_service_mock, plugin_definition, plugin_location):
         Plugin: A plugin instance for testing
     """
     return Plugin(
-        configuration_service=plugin_config_service_mock,
+        configuration=plugin_configuration_mock,
         definition=plugin_definition,
         location=plugin_location
     )

@@ -2,10 +2,10 @@ import logging
 
 from omnitool_plugin_base.plugin.base import PluginDefinition
 
-from omnitool.plugin import finder, configuration
+from omnitool.plugin import finder
 from omnitool.plugin.base import Plugin
 from omnitool.plugin.finder import PluginLocation
-from omnitool.plugin.configuration import PluginConfigurationService
+from omnitool.plugin.configuration import load_configuration, PluginConfiguration
 
 
 logger = logging.getLogger(__name__)
@@ -45,11 +45,9 @@ def _load_plugin(plugin_location: PluginLocation) -> Plugin:
     plugin_definition: PluginDefinition = plugin_location.load_module()
     _validate_plugin_definition(plugin_definition)
 
-    configuration_service: PluginConfigurationService = configuration.plugin_configuration_service(
-        configuration_file=plugin_location.configuration_file,
-        resource_type=plugin_definition.resource_type)
+    plugin_configuration: PluginConfiguration = load_configuration(plugin_location.configuration_file)
 
-    return Plugin(configuration_service, plugin_definition, plugin_location)
+    return Plugin(plugin_configuration, plugin_definition, plugin_location)
 
 
 def _validate_plugin_definition(plugin_definition: PluginDefinition) -> None:

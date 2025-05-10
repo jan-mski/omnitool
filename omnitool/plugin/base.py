@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field, InitVar
+from dataclasses import dataclass
 from pathlib import Path
 
-from omnitool.plugin.configuration import PluginConfigurationService
+from omnitool.plugin.configuration import PluginConfiguration
 from omnitool_plugin_base.plugin.base import PluginDefinition
 
 
@@ -46,13 +46,9 @@ class PluginLocation:
 
 @dataclass
 class Plugin:
-    _configuration_service: PluginConfigurationService = field(init=False, repr=False)
-    configuration_service: InitVar[PluginConfigurationService]
+    configuration: PluginConfiguration
     definition: PluginDefinition
     location: PluginLocation
-
-    def __post_init__(self, configuration_service: PluginConfigurationService):
-        self._configuration_service = configuration_service
 
     @property
     def name(self) -> str:

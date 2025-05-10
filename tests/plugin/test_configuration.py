@@ -3,12 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from omnitool.plugin.configuration import (
-    PluginConfiguration,
-    _PluginConfigurationService,
-    plugin_configuration_service,
-    PluginConfigurationLoadError,
-)
+from omnitool.plugin.configuration import PluginConfiguration, load_configuration, PluginConfigurationLoadError
 
 
 @pytest.fixture
@@ -76,24 +71,6 @@ def create_configuration_file(tmp_path, configuration_json):
 
 
 @pytest.fixture
-def configuration_service(create_configuration_file, context_resource_type):
-    """
-    Creates a plugin configuration service instance for testing.
-
-    Args:
-        create_configuration_file: Fixture that creates the configuration file
-        context_resource_type: The resource type used by the plugin
-
-    Returns:
-        _PluginConfigurationService: A configuration service instance with test configuration
-    """
-    configuration_file = create_configuration_file()
-
-    return _PluginConfigurationService(configuration_file=configuration_file,
-                                       resource_type=context_resource_type)
-
-
-@pytest.fixture
 def configuration_model(configuration_json, context_resource_type):
     """
     Creates a validated PluginConfiguration model with test data.
@@ -134,29 +111,28 @@ def test_plugin_configuration_resources(configuration_json):
     assert configuration_model.model_dump() == expected_paths
 
 
-def test_load_configuration(configuration_service, configuration_model):
+def test_load_configuration(create_configuration_file, configuration_model):
     """
     Tests that configuration loading works correctly.
-    Expects the internal configuration to match the loaded model.
+    Expects the loaded configuration to match the expected model.
     """
-    configuration_service.load_configuration()
+    loaded_configuration = load_configuration(create_configuration_file())
 
-    assert configuration_service._configuration == configuration_model
+    assert loaded_configuration == configuration_model
 
 
-def test_load_configuration_nonexistent_file(create_configuration_file, context_resource_type):
+def test_load_configuration_nonexistent_file(create_configuration_file, configuration_model):
     """
     Tests that loading from a nonexistent file creates a default configuration.
     Expects an empty configuration to be created and the configuration file to be written.
     """
     configuration_file = create_configuration_file(write=False)
-    configuration_service = _PluginConfigurationService(configuration_file=configuration_file,
-                                                        resource_type=context_resource_type)
-    expected_file_content = PluginConfiguration().model_dump_json(indent=2)
+    default_plugin_configuration = PluginConfiguration()
+    expected_file_content = default_plugin_configuration.model_dump_json(indent=2)
 
-    configuration_service.load_configuration()
+    configuration = load_configuration(configuration_file=configuration_file)
 
-    assert configuration_service._configuration.contexts == {}
+    assert configuration.contexts == {}
     assert configuration_file.is_file()
     assert configuration_file.read_text(encoding="utf-8") == expected_file_content
 
@@ -169,27 +145,7 @@ def test_load_configuration_not_a_file(tmp_path, context_resource_type):
     configuration_dir = tmp_path / "config_dir"
     configuration_dir.mkdir()
 
-    configuration_service = _PluginConfigurationService(configuration_file=configuration_dir,
-                                                        resource_type=context_resource_type)
-
     with pytest.raises(PluginConfigurationLoadError) as exc_info:
-        configuration_service.load_configuration()
+        load_configuration(configuration_file=configuration_dir)
 
     assert f"Configuration file '{configuration_dir}' is not a file" in str(exc_info.value)
-
-
-def test_plugin_configuration_service(configuration_service, create_configuration_file, context_resource_type):
-    """
-    Tests that the plugin_configuration_service factory function works correctly.
-    Expects a properly configured _PluginConfigurationService instance to be returned.
-    """
-    configuration_service.load_configuration()
-
-    configuration_file = create_configuration_file()
-    actual_configuration_service = plugin_configuration_service(configuration_file=configuration_file,
-                                                                resource_type=context_resource_type)
-
-    assert isinstance(actual_configuration_service, _PluginConfigurationService)
-    assert actual_configuration_service._configuration_file == configuration_service._configuration_file
-    assert actual_configuration_service._resource_type == configuration_service._resource_type
-    assert actual_configuration_service._configuration == configuration_service._configuration
