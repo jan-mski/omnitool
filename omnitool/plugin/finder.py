@@ -57,7 +57,7 @@ def _find_plugin_modules() -> list[PluginModule]:
             plugin_modules.append(PluginEntryPoint(entry_point))
             seen_names.add(entry_point.name)
 
-    logger.debug(f"Found plugin modules for plugins: {[plugin.name for plugin in plugin_modules]}")
+    logger.debug(f"Found plugin modules for plugins: {[module.name for module in plugin_modules]}")
 
     return plugin_modules
 

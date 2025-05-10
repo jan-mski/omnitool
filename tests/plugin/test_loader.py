@@ -11,26 +11,25 @@ from omnitool.plugin.configuration import PluginConfiguration
 
 @pytest.fixture
 def mock_plugin_location(mocker, tmp_path) -> callable:
-    def _mock_plugin_location(plugin_definition: PluginDefinition) -> mocker.MagicMock:
+    def _mock_plugin_location(plugin_name: str, plugin_definition: PluginDefinition) -> mocker.MagicMock:
         """
         Creates a mock PluginLocation object for testing.
 
         Args:
+            plugin_name: The name of the plugin.
             plugin_definition: The plugin definition object.
 
         Returns:
             MagicMock: A mocked PluginLocation object.
         """
-        plugin_name = plugin_definition.name if plugin_definition else None
-
         module_mock = mocker.MagicMock()
         module_mock.source = "plugin_source"
-        module_mock.name = plugin_name
+        module_mock.root_operation_name = plugin_name
 
         location_mock = mocker.MagicMock()
         location_mock.plugin_name = plugin_name
         location_mock.plugin_module = module_mock
-        location_mock.configuration_dir = Path(tmp_path) / plugin_name if plugin_name else tmp_path
+        location_mock.configuration_dir = Path(tmp_path) / plugin_name
         location_mock.load_module.return_value = plugin_definition
 
         return location_mock
@@ -109,13 +108,15 @@ def test_load_plugins_successful_loading(mocker,
     """
     plugin1_name = "plugin1"
     plugin2_name = "plugin2"
-    plugin1_definition = PluginDefinition(name=plugin1_name, resource_type=context_resource_type)
-    plugin2_definition = PluginDefinition(name=plugin2_name, resource_type=context_resource_type)
+    plugin1_definition = PluginDefinition(root_operation_name=plugin1_name, resource_type=context_resource_type)
+    plugin2_definition = PluginDefinition(root_operation_name=plugin2_name, resource_type=context_resource_type)
 
     plugin1_location_mock = mock_plugin_location(
+        plugin_name=plugin1_name,
         plugin_definition=plugin1_definition
     )
     plugin2_location_mock = mock_plugin_location(
+        plugin_name=plugin2_name,
         plugin_definition=plugin2_definition
     )
     mock_find_plugins([plugin1_location_mock, plugin2_location_mock])
@@ -153,18 +154,22 @@ def test_load_plugins_multiple_plugins_with_exceptions(mocker,
     without affecting other plugins.
     """
     good_plugin_name = "good_plugin"
-    good_plugin_definition = PluginDefinition(name=good_plugin_name, resource_type=context_resource_type)
+    good_plugin_definition = PluginDefinition(root_operation_name=good_plugin_name, resource_type=context_resource_type)
     good_plugin_location_mock = mock_plugin_location(
+        plugin_name=good_plugin_name,
         plugin_definition=good_plugin_definition
     )
     
+    bad_plugin1_name = "bad_plugin1"
     bad_plugin1_location_mock = mock_plugin_location(
+        plugin_name=bad_plugin1_name,
         plugin_definition=None
     )
     
     bad_plugin2_name = "bad_plugin2"
-    bad_plugin2_definition = PluginDefinition(name=bad_plugin2_name, resource_type=context_resource_type)
+    bad_plugin2_definition = PluginDefinition(root_operation_name=bad_plugin2_name, resource_type=context_resource_type)
     bad_plugin2_location_mock = mock_plugin_location(
+        plugin_name=bad_plugin2_name,
         plugin_definition=bad_plugin2_definition
     )
 
@@ -195,15 +200,17 @@ def test_load_plugins_all_plugins_fail(mock_plugin_location, mock_find_plugins, 
     Expects appropriate warning log for each plugin and an empty loaded_plugins dictionary.
     """
     bad_plugin1_name = "bad_plugin1"
-    bad_plugin1_definition = PluginDefinition(name=bad_plugin1_name, resource_type=context_resource_type)
+    bad_plugin1_definition = PluginDefinition(root_operation_name=bad_plugin1_name, resource_type=context_resource_type)
     bad_plugin1_location_mock = mock_plugin_location(
+        plugin_name=bad_plugin1_name,
         plugin_definition=bad_plugin1_definition
     )
     bad_plugin1_location_mock.load_module.side_effect = ValueError("Invalid plugin definition")
     
     bad_plugin2_name = "bad_plugin2"
-    bad_plugin2_definition = PluginDefinition(name=bad_plugin2_name, resource_type=context_resource_type)
+    bad_plugin2_definition = PluginDefinition(root_operation_name=bad_plugin2_name, resource_type=context_resource_type)
     bad_plugin2_location_mock = mock_plugin_location(
+        plugin_name=bad_plugin2_name,
         plugin_definition=bad_plugin2_definition
     )
     bad_plugin2_location_mock.load_module.side_effect = ImportError("Could not import plugin module")
@@ -225,14 +232,16 @@ def test_load_plugins_resets_loaded_plugins(mocker,
     Expects any previously loaded plugins to be removed before loading new ones.
     """
     plugin1_name = "plugin1"
-    plugin1_definition = PluginDefinition(name=plugin1_name, resource_type=context_resource_type)
+    plugin1_definition = PluginDefinition(root_operation_name=plugin1_name, resource_type=context_resource_type)
     plugin1_location_mock = mock_plugin_location(
+        plugin_name=plugin1_name,
         plugin_definition=plugin1_definition
     )
     
     plugin2_name = "plugin2"
-    plugin2_definition = PluginDefinition(name=plugin2_name, resource_type=context_resource_type)
+    plugin2_definition = PluginDefinition(root_operation_name=plugin2_name, resource_type=context_resource_type)
     plugin2_location_mock = mock_plugin_location(
+        plugin_name=plugin2_name,
         plugin_definition=plugin2_definition
     )
 
@@ -275,9 +284,10 @@ def test_load_plugins_invalid_plugin_definition_type(mock_plugin_location, mock_
     Expects the faulty plugin to be skipped and not loaded.
     """
     plugin_name = "invalid_plugin"
-    plugin_definition = PluginDefinition(name=plugin_name, resource_type=context_resource_type)
+    plugin_definition = PluginDefinition(root_operation_name=plugin_name, resource_type=context_resource_type)
 
     invalid_plugin_location = mock_plugin_location(
+        plugin_name=plugin_name,
         plugin_definition=plugin_definition
     )
     invalid_plugin_location.load_module.return_value = "This is not a PluginDefinition object"
@@ -297,13 +307,14 @@ def test_load_plugins_plugin_definition_missing_resource_type(mock_plugin_locati
     Expects the plugin to be skipped and not loaded.
     """
     plugin_name = "missing_resource_type_plugin"
-    plugin_definition = PluginDefinition(name=plugin_name)
+    plugin_definition = PluginDefinition(root_operation_name=plugin_name)
 
     @plugin_definition.resource_operation
     def some_operation():
         pass
 
     missing_resource_type_location = mock_plugin_location(
+        plugin_name=plugin_name,
         plugin_definition=plugin_definition
     )
 
