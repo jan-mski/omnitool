@@ -1,8 +1,6 @@
-from pathlib import Path
-
 import pytest
 
-from omnitool.plugin.base import (Plugin, PLUGIN_CONFIGURATION_FILE_NAME, PluginLocation)
+from omnitool.plugin.base import (Plugin, PluginLocation)
 from omnitool_plugin_base.plugin.base import PluginDefinition
 from omnitool.plugin.configuration import PluginConfiguration
 
@@ -11,7 +9,7 @@ from omnitool.plugin.configuration import PluginConfiguration
 def plugin_configuration_mock(mocker):
     """
     Creates a mock PluginConfiguration for testing.
-    
+
     Returns:
         MagicMock: A mocked PluginConfiguration instance
     """
@@ -22,7 +20,7 @@ def plugin_configuration_mock(mocker):
 def plugin_definition(context_resource_type):
     """
     Creates a test PluginDefinition with a fixed name and resource data type.
-    
+
     Returns:
         PluginDefinition: A plugin definition for testing
     """
@@ -32,20 +30,20 @@ def plugin_definition(context_resource_type):
 @pytest.fixture
 def plugin_location(mocker):
     """
-    Creates a test PluginLocation with a predetermined configuration directory.
-    
+    Creates a test PluginLocation with a mock plugin module.
+
     Returns:
         PluginLocation: A plugin location for testing
     """
-    return PluginLocation(configuration_dir=Path("/root/dir/"),
-                          plugin_module=mocker.MagicMock())
+    mock_module = mocker.MagicMock()
+    return PluginLocation(plugin_module=mock_module)
 
 
 @pytest.fixture
 def plugin(plugin_configuration_mock, plugin_definition, plugin_location):
     """
     Creates a Plugin instance using the provided fixtures.
-    
+
     Returns:
         Plugin: A plugin instance for testing
     """
@@ -62,16 +60,6 @@ def test_plugin_name(plugin, plugin_location):
     Expects the plugin name to match the name in the plugin definition.
     """
     assert plugin.name == plugin_location.plugin_name
-
-
-def test_plugin_location_configuration_file(plugin_location):
-    """
-    Tests that the plugin_location's configuration_file property correctly returns the expected path.
-    Expects the configuration_file to be the configuration directory joined with configuration file name.
-    """
-    expected_file = plugin_location.configuration_dir / PLUGIN_CONFIGURATION_FILE_NAME
-
-    assert plugin_location.configuration_file == expected_file
 
 
 def test_plugin_location_plugin_name(plugin_location):

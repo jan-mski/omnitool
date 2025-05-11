@@ -1,5 +1,4 @@
 from importlib.metadata import EntryPoint
-from pathlib import Path
 
 import pytest
 
@@ -82,37 +81,6 @@ def mock_entry_points(mock_entry_point, mock_entry_points_function):
     return _mock_entry_points
 
 
-@pytest.fixture
-def mock_plugin_configurations(mocker, tmp_path):
-    def _mock_plugin_configurations(plugin_names: list[str] = None, create_dirs: bool = True) -> Path:
-        """
-        Sets up plugin configuration paths for testing.
-
-        Args:
-            plugin_names: List of plugin names to configure
-            create_dirs: Whether to create plugin directories
-
-        Returns:
-            The base plugin configurations directory path
-        """
-        plugin_names = plugin_names or []
-
-        plugin_configurations_path = tmp_path / "plugins"
-        plugin_configurations_path.mkdir(parents=True, exist_ok=True)
-        mocker.patch.object(omnitool.plugin.finder.settings, "PLUGIN_CONFIGURATIONS_PATH", plugin_configurations_path)
-
-        for plugin_name in plugin_names:
-            if not create_dirs:
-                continue
-
-            plugin_dir = plugin_configurations_path / plugin_name
-            plugin_dir.mkdir(parents=True, exist_ok=True)
-
-        return plugin_configurations_path
-
-    return _mock_plugin_configurations
-
-
 def test_plugin_entry_point_name_property(mocker):
     """
     Tests that the public property name returns the underlying entry_point name.
@@ -144,7 +112,7 @@ def test_plugin_entry_point_load(mocker, context_resource_type):
     entry_point.load.assert_called_once()
 
 
-def test_find_plugins_combines_builtin_and_user(mock_settings, mock_entry_points, mock_plugin_configurations):
+def test_find_plugins_combines_builtin_and_user(mock_settings, mock_entry_points):
     """
     Tests that find_plugins returns a combined list of PluginLocation objects for both builtin and user plugins
     as configured in settings.
@@ -155,14 +123,11 @@ def test_find_plugins_combines_builtin_and_user(mock_settings, mock_entry_points
 
     mock_settings([builtin_plugin_name], [user_plugin_name])
     plugin_entry_points = mock_entry_points([builtin_plugin_name, user_plugin_name])
-    plugin_configurations_path = mock_plugin_configurations([builtin_plugin_name, user_plugin_name])
 
     expected_plugin_locations = [
         PluginLocation(
-            configuration_dir=plugin_configurations_path / builtin_plugin_name,
             plugin_module=PluginEntryPoint(plugin_entry_points[builtin_plugin_name])),
         PluginLocation(
-            configuration_dir=plugin_configurations_path / user_plugin_name,
             plugin_module=PluginEntryPoint(plugin_entry_points[user_plugin_name])),
     ]
 
@@ -171,44 +136,19 @@ def test_find_plugins_combines_builtin_and_user(mock_settings, mock_entry_points
     assert actual_plugin_locations == expected_plugin_locations
 
 
-def test_find_plugins_skips_missing_plugins(mock_settings, mock_entry_points, mock_plugin_configurations):
+def test_find_plugins_skips_missing_plugins(mock_settings, mock_entry_points):
     """
     Tests that find_plugins skips plugins that are not discovered in the plugin entry points.
-    Expects missing plugins to be omitted with a warning logged.
+    Expects missing plugins to be omitted.
     """
     existing_plugin_name = "existing_plugin"
 
     mock_settings([existing_plugin_name, "missing_plugin"], [])
     plugin_entry_points = mock_entry_points([existing_plugin_name])
-    plugin_configurations_path = mock_plugin_configurations([existing_plugin_name])
 
     expected_plugin_locations = [
-        PluginLocation(configuration_dir=plugin_configurations_path / existing_plugin_name,
-                       plugin_module=PluginEntryPoint(plugin_entry_points[existing_plugin_name]))
+        PluginLocation(plugin_module=PluginEntryPoint(plugin_entry_points[existing_plugin_name]))
     ]
-
-    actual_plugin_locations = find_plugins()
-
-    assert actual_plugin_locations == expected_plugin_locations
-
-
-def test_find_plugins_ignores_invalid_configuration_directory(mock_settings,
-                                                              mock_entry_points,
-                                                              mock_plugin_configurations):
-    """
-    Tests that find_plugins ignores a plugin configuration directory when it exists but is not a directory.
-    Expects a warning log and the plugin to be completely skipped.
-    """
-    plugin_name = "test_plugin"
-
-    mock_settings([plugin_name], [])
-    mock_entry_points([plugin_name])
-    plugin_configurations_path = mock_plugin_configurations([plugin_name], create_dirs=False)
-
-    plugin_dir_path = plugin_configurations_path / plugin_name
-    plugin_dir_path.write_text("not a directory")
-
-    expected_plugin_locations = []
 
     actual_plugin_locations = find_plugins()
 
@@ -217,8 +157,7 @@ def test_find_plugins_ignores_invalid_configuration_directory(mock_settings,
 
 def test_find_plugins_handles_duplicate_plugin_name(mock_settings,
                                                     mock_entry_point,
-                                                    mock_entry_points_function,
-                                                    mock_plugin_configurations):
+                                                    mock_entry_points_function):
     """
     Tests that find_plugins correctly handles a plugin name that appears in both builtin and user plugin lists.
     Expects the plugin to appear only once in the final list.
@@ -229,11 +168,9 @@ def test_find_plugins_handles_duplicate_plugin_name(mock_settings,
     first_entry_point = mock_entry_point(duplicate_plugin_name)
     second_entry_point = mock_entry_point(duplicate_plugin_name)
     mock_entry_points_function([first_entry_point, second_entry_point])
-    plugin_configurations_path = mock_plugin_configurations([duplicate_plugin_name])
 
     expected_plugin_locations = [
         PluginLocation(
-            configuration_dir=plugin_configurations_path / duplicate_plugin_name,
             plugin_module=PluginEntryPoint(first_entry_point)),
     ]
 

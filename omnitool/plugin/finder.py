@@ -1,8 +1,6 @@
 import logging
 from dataclasses import dataclass
 from importlib.metadata import EntryPoint, entry_points
-from pathlib import Path
-from typing import Optional
 
 from omnitool import settings
 from omnitool.plugin.base import PluginLocation, PluginModule, PluginDefinition
@@ -35,8 +33,7 @@ def find_plugins() -> list[PluginLocation]:
 
     plugin_modules = _find_plugin_modules()
     installed_plugins = _find_installed_plugins(plugin_modules)
-    configuration_dirs = _find_plugin_configuration_dirs(installed_plugins)
-    plugin_locations = _create_plugin_locations(configuration_dirs, installed_plugins)
+    plugin_locations = _create_plugin_locations(installed_plugins)
 
     if plugin_locations:
         logger.debug(f"Plugins found: {[location.plugin_name for location in plugin_locations]}")
@@ -81,41 +78,8 @@ def _find_installed_plugins(plugin_modules: list[PluginModule]) -> dict[str, Plu
     return installed_plugins
 
 
-def _find_plugin_configuration_dirs(installed_plugins: dict[str, PluginModule]) -> dict[str, Path]:
-    return {plugin_name: _find_plugin_configuration_dir(plugin_name) for plugin_name in installed_plugins.keys()}
-
-
-def _create_plugin_locations(configuration_dirs: dict[str, Path],
-                             installed_plugins: dict[str, PluginModule]) -> list[PluginLocation]:
-    plugin_locations = []
-
-    for plugin_name in installed_plugins.keys():
-        configuration_dir = configuration_dirs[plugin_name]
-
-        try:
-            _validate_configuration_dir(configuration_dir)
-
-            plugin_locations.append(PluginLocation(
-                configuration_dir=configuration_dir,
-                plugin_module=installed_plugins[plugin_name]
-            ))
-        except Exception as e:
-            logger.debug(f"Skipping invalid plugin '{plugin_name}'", e)
-
-    return plugin_locations
-
-
-def _find_plugin_configuration_dir(plugin_name: str) -> Optional[Path]:
-    configuration_dir = settings.PLUGIN_CONFIGURATIONS_PATH / plugin_name
-
-    if not configuration_dir.exists():
-        configuration_dir.mkdir(parents=True)
-
-    logger.debug(f"Plugin configuration directory for '{plugin_name}' is '{configuration_dir}'")
-
-    return configuration_dir
-
-
-def _validate_configuration_dir(configuration_dir: Path):
-    if configuration_dir.exists() and not configuration_dir.is_dir():
-        raise ValueError(f"Plugin configuration directory '{configuration_dir}' is not a directory")
+def _create_plugin_locations(installed_plugins: dict[str, PluginModule]) -> list[PluginLocation]:
+    return [
+        PluginLocation(plugin_module=plugin_module)
+        for plugin_name, plugin_module in installed_plugins.items()
+    ]
