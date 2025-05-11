@@ -23,7 +23,7 @@ jobs:
           pkg-manager: poetry # https://circleci.com/developer/orbs/orb/circleci/python#usage-work-with-poetry
       - run:
           name: Run tests
-          command: poetry run pytest --cov=omnitool
+          command: poetry run pytest
 
 # See: https://circleci.com/docs/configuration-reference/#workflows
 workflows:
