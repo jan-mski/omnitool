@@ -45,7 +45,7 @@ def _load_plugin(plugin_location: PluginLocation) -> Plugin:
     plugin_definition: PluginDefinition = plugin_location.load_module()
     _validate_plugin_definition(plugin_definition)
 
-    plugin_configuration: PluginConfiguration = load_configuration(plugin_location.configuration_file)
+    plugin_configuration: PluginConfiguration = load_configuration(plugin_location.plugin_name)
 
     return Plugin(plugin_configuration, plugin_definition, plugin_location)
 

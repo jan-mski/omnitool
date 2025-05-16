@@ -81,6 +81,8 @@ def mock_load_configuration(mocker):
         """
         load_configuration_mock = mocker.patch.object(omnitool.plugin.loader, "load_configuration")
         load_configuration_mock.side_effect = configurations
+        
+        return load_configuration_mock
 
     return _mock_load_configuration
 
@@ -123,7 +125,7 @@ def test_load_plugins_successful_loading(mocker,
 
     plugin1_configuration_mock = mocker.MagicMock()
     plugin2_configuration_mock = mocker.MagicMock()
-    mock_load_configuration([plugin1_configuration_mock, plugin2_configuration_mock])
+    load_configuration_mock = mock_load_configuration([plugin1_configuration_mock, plugin2_configuration_mock])
 
     loader.load_plugins()
 
@@ -141,6 +143,10 @@ def test_load_plugins_successful_loading(mocker,
     }
 
     assert loader.loaded_plugins == expected_plugins
+    assert load_configuration_mock.call_count == 2
+    load_configuration_mock.assert_any_call(plugin1_name)
+    load_configuration_mock.assert_any_call(plugin2_name)
+    
 
 
 def test_load_plugins_multiple_plugins_with_exceptions(mocker,
@@ -176,7 +182,7 @@ def test_load_plugins_multiple_plugins_with_exceptions(mocker,
     mock_find_plugins([good_plugin_location_mock, bad_plugin1_location_mock, bad_plugin2_location_mock])
 
     good_plugin_configuration_mock = mocker.MagicMock()
-    mock_load_configuration([
+    load_configuration_mock = mock_load_configuration([
         good_plugin_configuration_mock,
         Exception("Failed to load configuration")
     ])
@@ -192,6 +198,10 @@ def test_load_plugins_multiple_plugins_with_exceptions(mocker,
     }
 
     assert loader.loaded_plugins == expected_plugins
+    
+    assert load_configuration_mock.call_count == 2
+    load_configuration_mock.assert_any_call(good_plugin_name)
+    load_configuration_mock.assert_any_call(bad_plugin2_name)
 
 
 def test_load_plugins_all_plugins_fail(mock_plugin_location, mock_find_plugins, context_resource_type):
@@ -246,7 +256,7 @@ def test_load_plugins_resets_loaded_plugins(mocker,
     )
 
     plugin1_configuration_mock = mocker.MagicMock()
-    mock_load_configuration([plugin1_configuration_mock])
+    load_configuration_mock1 = mock_load_configuration([plugin1_configuration_mock])
     mock_find_plugins([plugin1_location_mock])
 
     loader.load_plugins()
@@ -260,9 +270,10 @@ def test_load_plugins_resets_loaded_plugins(mocker,
     }
 
     assert loader.loaded_plugins == expected_plugins
+    load_configuration_mock1.assert_called_once_with(plugin1_name)
 
     plugin2_configuration_mock = mocker.MagicMock()
-    mock_load_configuration([plugin2_configuration_mock])
+    load_configuration_mock2 = mock_load_configuration([plugin2_configuration_mock])
     mock_find_plugins([plugin2_location_mock])
 
     loader.load_plugins()
@@ -276,6 +287,7 @@ def test_load_plugins_resets_loaded_plugins(mocker,
     }
 
     assert loader.loaded_plugins == expected_plugins
+    load_configuration_mock2.assert_called_once_with(plugin2_name)
 
 
 def test_load_plugins_invalid_plugin_definition_type(mock_plugin_location, mock_find_plugins, context_resource_type):
