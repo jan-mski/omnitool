@@ -38,48 +38,6 @@ def plugin_location(mock_plugin_module):
 
 
 @pytest.fixture
-def configuration_json():
-    """
-    Provides a test configuration in JSON format with sample contexts and resources.
-
-    Returns:
-        dict: A nested dictionary representing plugin configuration with contexts and resources
-    """
-    return {
-        "contexts": {
-            "context1": {
-                "name": "Context 1",
-                "resources": {
-                    "resource1": {
-                        "name": "Resource 1",
-                        "location": {
-                            "path": "path/to/resource1",
-                        },
-                    },
-                    "resource2": {
-                        "name": "Resource 2",
-                        "location": {
-                            "path": "path/to/resource2",
-                        },
-                    },
-                },
-            },
-            "context2": {
-                "name": "Context 2",
-                "resources": {
-                    "resource3": {
-                        "name": "Resource 3",
-                        "location": {
-                            "path": "path/to/resource3",
-                        },
-                    },
-                },
-            },
-        },
-    }
-
-
-@pytest.fixture
 def create_configuration_file(configuration_json):
     def _create_configuration_file(plugin_configurations_dir: Path, plugin_name: str, write: bool = True):
         """
@@ -96,26 +54,11 @@ def create_configuration_file(configuration_json):
         configuration_file = plugin_configurations_dir / plugin_name / PLUGIN_CONFIGURATION_FILE_NAME
 
         if write:
-            configuration_file.write_text(json.dumps(configuration_json))
+            configuration_file.write_text(configuration_json)
 
         return configuration_file
 
     return _create_configuration_file
-
-
-@pytest.fixture
-def configuration_model(configuration_json, context_resource_type):
-    """
-    Creates a validated PluginConfiguration model with test data.
-
-    Args:
-        configuration_json: The test configuration data
-        context_resource_type: The resource type used by the plugin
-
-    Returns:
-        PluginConfiguration: A validated configuration model with populated resource data
-    """
-    return PluginConfiguration.model_validate(configuration_json)
 
 
 @pytest.fixture
@@ -158,20 +101,27 @@ def test_plugin_configuration_empty():
     empty_configuration = PluginConfiguration()
 
     assert empty_configuration.contexts == {}
-    assert empty_configuration.resources == {}
 
 
-def test_plugin_configuration_resources(configuration_json):
+def test_plugin_configuration_resources(configuration_json, configuration_model):
     """
     Tests that a PluginConfiguration correctly loads resource data from JSON.
     Expects the model dump to match the expected paths structure.
     """
-    configuration_model = PluginConfiguration.model_validate(configuration_json)
-
-    expected_paths = json.loads(json.dumps(configuration_json))  # Deep copy
-    for context in expected_paths["contexts"].values():
-        for resource in context["resources"].values():
-            resource["location"]["path"] = Path(resource["location"]["path"])
+    expected_paths = json.loads(configuration_json)  # Deep copy
+    expected_paths["contexts"] = {  # Convert nested lists to dicts keyed by name
+        context["name"]: {
+            **context,
+            "resources": {
+                resource["name"]: {
+                    **resource,
+                    "location": {"path": Path(resource["location"]["path"])}
+                }
+                for resource in context["resources"]
+            }
+        }
+        for context in expected_paths["contexts"]
+    }
 
     assert configuration_model.model_dump() == expected_paths
 

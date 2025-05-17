@@ -1,11 +1,11 @@
 import logging
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, BeforeValidator
 
 from omnitool import settings
-from omnitool_plugin_base.plugin.configuration import ContextResourceConfiguration
+from omnitool_plugin_base.plugin.configuration import ResourceConfiguration
 
 
 logger = logging.getLogger(__name__)
@@ -13,22 +13,27 @@ logger = logging.getLogger(__name__)
 PLUGIN_CONFIGURATION_FILE_NAME = "configuration.json"
 
 
+def _named_configurations_list_to_dict(value: list):
+    return {configuration["name"]: configuration for configuration in value} if value else {}
+
+
+ContextsDictType = Annotated[
+    dict[str, "ContextConfiguration"],
+    BeforeValidator(_named_configurations_list_to_dict)
+]
+ResourcesDictType = Annotated[
+    dict[str, ResourceConfiguration],
+    BeforeValidator(_named_configurations_list_to_dict)
+]
+
+
 class ContextConfiguration(BaseModel):
     name: str
-    resources: Dict[str, ContextResourceConfiguration]
+    resources: Optional[ResourcesDictType] = Field(default_factory=dict)
 
 
 class PluginConfiguration(BaseModel):
-    contexts: Optional[Dict[str, ContextConfiguration]] = Field(default_factory=dict)
-
-    @property
-    def resources(self) -> Dict[str, ContextResourceConfiguration]:
-        resources = {}
-
-        for context in self.contexts.values():
-            resources.update(context.resources)
-
-        return resources
+    contexts: Optional[ContextsDictType] = Field(default_factory=dict)
 
 
 class PluginConfigurationLoadError(Exception):

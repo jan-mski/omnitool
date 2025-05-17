@@ -112,8 +112,8 @@ def test_load_plugins_successful_loading(mocker,
     plugin2_name = "plugin2"
     plugin1_definition = PluginDefinition(root_operation_name=plugin1_name, resource_type=context_resource_type)
     plugin2_definition = PluginDefinition(root_operation_name=plugin2_name, resource_type=context_resource_type)
-    plugin1_definition.resource_loader_function = lambda: None
-    plugin2_definition.resource_loader_function = lambda: None
+    plugin1_definition.resource_loader_function = lambda c: None
+    plugin2_definition.resource_loader_function = lambda c: None
 
     plugin1_location_mock = mock_plugin_location(
         plugin_name=plugin1_name,
@@ -163,7 +163,7 @@ def test_load_plugins_multiple_plugins_with_exceptions(mocker,
     """
     good_plugin_name = "good_plugin"
     good_plugin_definition = PluginDefinition(root_operation_name=good_plugin_name, resource_type=context_resource_type)
-    good_plugin_definition.resource_loader_function = lambda: None
+    good_plugin_definition.resource_loader_function = lambda c: None
     good_plugin_location_mock = mock_plugin_location(
         plugin_name=good_plugin_name,
         plugin_definition=good_plugin_definition
@@ -177,7 +177,7 @@ def test_load_plugins_multiple_plugins_with_exceptions(mocker,
     
     bad_plugin2_name = "bad_plugin2"
     bad_plugin2_definition = PluginDefinition(root_operation_name=bad_plugin2_name, resource_type=context_resource_type)
-    bad_plugin2_definition.resource_loader_function = lambda: None
+    bad_plugin2_definition.resource_loader_function = lambda c: None
     bad_plugin2_location_mock = mock_plugin_location(
         plugin_name=bad_plugin2_name,
         plugin_definition=bad_plugin2_definition
@@ -251,7 +251,7 @@ def test_load_plugins_resets_loaded_plugins(mocker,
         plugin_name=plugin1_name,
         plugin_definition=plugin1_definition
     )
-    plugin1_definition.resource_loader_function = lambda: None
+    plugin1_definition.resource_loader_function = lambda c: None
 
     plugin2_name = "plugin2"
     plugin2_definition = PluginDefinition(root_operation_name=plugin2_name, resource_type=context_resource_type)
@@ -259,7 +259,7 @@ def test_load_plugins_resets_loaded_plugins(mocker,
         plugin_name=plugin2_name,
         plugin_definition=plugin2_definition
     )
-    plugin2_definition.resource_loader_function = lambda: None
+    plugin2_definition.resource_loader_function = lambda c: None
 
     plugin1_configuration_mock = mocker.MagicMock()
     load_configuration_mock1 = mock_load_configuration([plugin1_configuration_mock])
