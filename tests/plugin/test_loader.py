@@ -7,6 +7,7 @@ from pathlib import Path
 from omnitool_plugin_base.plugin.base import PluginDefinition, ContextResource
 from omnitool.plugin.base import Plugin, PluginLocation
 from omnitool.plugin.configuration import PluginConfiguration
+from omnitool.plugin.data import PluginData
 
 
 @pytest.fixture
@@ -89,15 +90,15 @@ def mock_load_configuration(mocker):
 
 @pytest.fixture
 def mock_load_data(mocker):
-    def _mock_load_data(data: list[dict[str, list[ContextResource]]]):
+    def _mock_load_data(plugin_data_list: list[PluginData]):
         """
         Sets up the load_data mock to return the specified data.
 
         Args:
-            data: List of data mocks to be returned.
+            plugin_data_list: List of PluginData objects to be returned.
         """
         load_data_mock = mocker.patch.object(omnitool.plugin.loader, "load_data")
-        load_data_mock.side_effect = data
+        load_data_mock.side_effect = plugin_data_list
 
         return load_data_mock
 
@@ -144,10 +145,12 @@ def create_plugin(mocker, mock_plugin_location, create_plugin_definition) -> cal
             plugin_definition=plugin_definition
         )
 
-        contexts = {f"context_{plugin_name}": mocker.MagicMock()}
+        plugin_data = mocker.MagicMock(spec=PluginData)
+        plugin_configuration = mocker.MagicMock(spec=PluginConfiguration)
 
         return Plugin(
-            contexts=contexts,
+            data=plugin_data,
+            configuration=plugin_configuration,
             definition=plugin_definition,
             location=location_mock
         )
@@ -182,12 +185,8 @@ def test_load_plugins_successful_loading(mocker,
     plugin2 = create_plugin(plugin2_name)
 
     mock_find_plugins([plugin1.location, plugin2.location])
-
-    plugin1_configuration_mock = mocker.MagicMock()
-    plugin2_configuration_mock = mocker.MagicMock()
-    load_configuration_mock = mock_load_configuration([plugin1_configuration_mock, plugin2_configuration_mock])
-
-    load_data_mock = mock_load_data([plugin1.contexts, plugin2.contexts])
+    load_configuration_mock = mock_load_configuration([plugin1.configuration, plugin2.configuration])
+    load_data_mock = mock_load_data([plugin1.data, plugin2.data])
 
     loader.load_plugins()
 
@@ -203,8 +202,8 @@ def test_load_plugins_successful_loading(mocker,
     load_configuration_mock.assert_any_call(plugin2_name)
 
     assert load_data_mock.call_count == 2
-    load_data_mock.assert_any_call(plugin1_name, plugin1_configuration_mock, plugin1.definition)
-    load_data_mock.assert_any_call(plugin2_name, plugin2_configuration_mock, plugin2.definition)
+    load_data_mock.assert_any_call(plugin1_name, plugin1.configuration, plugin1.definition)
+    load_data_mock.assert_any_call(plugin2_name, plugin2.configuration, plugin2.definition)
 
 
 def test_load_plugins_multiple_plugins_with_exceptions(mocker,
@@ -230,14 +229,11 @@ def test_load_plugins_multiple_plugins_with_exceptions(mocker,
     bad_plugin2 = create_plugin("bad_plugin2")
 
     mock_find_plugins([good_plugin.location, bad_plugin1_location_mock, bad_plugin2.location])
-
-    good_plugin_configuration_mock = mocker.MagicMock()
     load_configuration_mock = mock_load_configuration([
-        good_plugin_configuration_mock,
+        good_plugin.configuration,
         Exception("Failed to load configuration")
     ])
-
-    load_data_mock = mock_load_data([good_plugin.contexts])
+    load_data_mock = mock_load_data([good_plugin.data])
 
     loader.load_plugins()
 
@@ -251,7 +247,7 @@ def test_load_plugins_multiple_plugins_with_exceptions(mocker,
     load_configuration_mock.assert_any_call(good_plugin_name)
     load_configuration_mock.assert_any_call("bad_plugin2")
     assert load_data_mock.call_count == 1
-    load_data_mock.assert_any_call(good_plugin_name, good_plugin_configuration_mock, good_plugin.definition)
+    load_data_mock.assert_any_call(good_plugin_name, good_plugin.configuration, good_plugin.definition)
 
 
 def test_load_plugins_all_plugins_fail(mock_plugin_location, mock_find_plugins, create_plugin_definition):
@@ -294,11 +290,10 @@ def test_load_plugins_resets_loaded_plugins(mocker,
     plugin1 = create_plugin("plugin1")
     plugin2 = create_plugin("plugin2")
 
-    plugin1_configuration_mock = mocker.MagicMock()
-    load_configuration_mock1 = mock_load_configuration([plugin1_configuration_mock])
+    load_configuration_mock1 = mock_load_configuration([plugin1.configuration])
     mock_find_plugins([plugin1.location])
 
-    load_data_mock1 = mock_load_data([plugin1.contexts])
+    load_data_mock1 = mock_load_data([plugin1.data])
 
     loader.load_plugins()
 
@@ -308,13 +303,12 @@ def test_load_plugins_resets_loaded_plugins(mocker,
 
     assert loader.loaded_plugins == expected_plugins
     load_configuration_mock1.assert_called_once_with("plugin1")
-    load_data_mock1.assert_called_once_with("plugin1", plugin1_configuration_mock, plugin1.definition)
+    load_data_mock1.assert_called_once_with("plugin1", plugin1.configuration, plugin1.definition)
 
-    plugin2_configuration_mock = mocker.MagicMock()
-    load_configuration_mock2 = mock_load_configuration([plugin2_configuration_mock])
+    load_configuration_mock2 = mock_load_configuration([plugin2.configuration])
     mock_find_plugins([plugin2.location])
 
-    load_data_mock2 = mock_load_data([plugin2.contexts])
+    load_data_mock2 = mock_load_data([plugin2.data])
 
     loader.load_plugins()
 
@@ -324,7 +318,7 @@ def test_load_plugins_resets_loaded_plugins(mocker,
 
     assert loader.loaded_plugins == expected_plugins
     load_configuration_mock2.assert_called_once_with("plugin2")
-    load_data_mock2.assert_called_once_with("plugin2", plugin2_configuration_mock, plugin2.definition)
+    load_data_mock2.assert_called_once_with("plugin2", plugin2.configuration, plugin2.definition)
 
 
 def test_load_plugins_invalid_plugin_definition_type(mock_plugin_location, mock_find_plugins, create_plugin_definition):

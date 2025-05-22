@@ -3,6 +3,7 @@ import pytest
 from omnitool.plugin.base import (Plugin, PluginLocation)
 from omnitool_plugin_base.plugin.base import PluginDefinition
 from omnitool.plugin.configuration import PluginConfiguration
+from omnitool.plugin.data import PluginData
 
 
 @pytest.fixture
@@ -14,6 +15,17 @@ def plugin_configuration_mock(mocker):
         MagicMock: A mocked PluginConfiguration instance
     """
     return mocker.MagicMock(spec=PluginConfiguration)
+
+
+@pytest.fixture
+def plugin_data_mock(mocker):
+    """
+    Creates a mock PluginData for testing.
+
+    Returns:
+        MagicMock: A mocked PluginData instance
+    """
+    return mocker.MagicMock(spec=PluginData)
 
 
 @pytest.fixture
@@ -40,7 +52,7 @@ def plugin_location(mocker):
 
 
 @pytest.fixture
-def plugin(plugin_configuration_mock, plugin_definition, plugin_location, plugin_contexts):
+def plugin(plugin_configuration_mock, plugin_data_mock, plugin_definition, plugin_location):
     """
     Creates a Plugin instance using the provided fixtures.
 
@@ -48,18 +60,23 @@ def plugin(plugin_configuration_mock, plugin_definition, plugin_location, plugin
         Plugin: A plugin instance for testing
     """
     return Plugin(
-        contexts=plugin_contexts,
+        data=plugin_data_mock,
+        configuration=plugin_configuration_mock,
         definition=plugin_definition,
         location=plugin_location
     )
 
 
-def test_plugin_name(plugin, plugin_location):
+def test_plugin(plugin, plugin_location, plugin_configuration_mock, plugin_data_mock, plugin_definition):
     """
     Tests that the plugin's name property correctly returns the name from the plugin definition.
     Expects the plugin name to match the name in the plugin definition.
     """
     assert plugin.name == plugin_location.plugin_name
+    assert plugin.data == plugin_data_mock
+    assert plugin.configuration == plugin_configuration_mock
+    assert plugin.definition == plugin_definition
+    assert plugin.location == plugin_location
 
 
 def test_plugin_location_plugin_name(plugin_location):

@@ -1,12 +1,34 @@
 import logging
+from dataclasses import dataclass
 
 from omnitool.plugin.configuration import PluginConfiguration
 from omnitool_plugin_base.plugin.base import PluginDefinition, ContextResource, ResourceLoaderProtocol
 from omnitool_plugin_base.plugin.configuration import ResourceConfiguration
-from omnitool.plugin.base import Context
 
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class Context:
+    """
+    Data class containing all the data for a context.
+
+    Attributes:
+        resources: A dictionary of resources, where the key is the name of the resource and the value is the resource.
+    """
+    resources: dict[str, ContextResource]
+
+
+@dataclass
+class PluginData:
+    """
+    Data class containing all the data for a plugin.
+
+    Attributes:
+        contexts: A dictionary of contexts, where the key is the name of the context and the value is the context.
+    """
+    contexts: dict[str, Context]
 
 
 class PluginDataLoadError(Exception):
@@ -16,7 +38,7 @@ class PluginDataLoadError(Exception):
 
 def load_data(plugin_name: str,
               plugin_configuration: PluginConfiguration,
-              plugin_definition: PluginDefinition) -> dict[str, Context]:
+              plugin_definition: PluginDefinition) -> PluginData:
     """
     Loads the data for the plugin.
 
@@ -26,7 +48,7 @@ def load_data(plugin_name: str,
         plugin_definition: The definition of the plugin.
 
     Returns:
-        A dictionary of contexts, where the key is the name of the context and the value is the context.
+        A PluginData object containing the contexts for the plugin.
     """
     logger.debug(f"Loading data for plugin '{plugin_name}'")
 
@@ -38,13 +60,13 @@ def load_data(plugin_name: str,
             resource_configurations = list(context_configuration.resources.values())
             resources: dict[str, ContextResource] = _load_resources(plugin_definition.resource_loader_function,
                                                                     resource_configurations)
-            contexts[context_name] = Context(resources, context_configuration)
+            contexts[context_name] = Context(resources=resources)
     except Exception as e:
         raise PluginDataLoadError(str(e)) from e
 
     logger.debug(f"Data loaded successfully for plugin '{plugin_name}")
 
-    return contexts
+    return PluginData(contexts=contexts)
 
 
 def _load_resources(resource_loader_function: ResourceLoaderProtocol,

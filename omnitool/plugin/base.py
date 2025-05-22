@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-from omnitool.plugin.configuration import ContextConfiguration
-from omnitool_plugin_base.plugin.base import PluginDefinition, ContextResource
+from omnitool.plugin.configuration import PluginConfiguration
+from omnitool_plugin_base.plugin.base import PluginDefinition
+from omnitool.plugin.data import PluginData
 
 
 class PluginModule(ABC):
@@ -36,18 +37,9 @@ class PluginLocation:
 
 
 @dataclass
-class Context:
-    resources: dict[str, ContextResource]
-    configuration: ContextConfiguration
-
-    @property
-    def name(self):
-        return self.configuration.name
-
-
-@dataclass
 class Plugin:
-    contexts: dict[str, Context]
+    data: PluginData
+    configuration: PluginConfiguration
     definition: PluginDefinition
     location: PluginLocation
 

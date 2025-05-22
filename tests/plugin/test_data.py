@@ -1,8 +1,7 @@
 import pytest
 from omnitool.plugin.configuration import PluginConfiguration
-from omnitool.plugin.data import PluginDataLoadError, load_data
+from omnitool.plugin.data import PluginDataLoadError, load_data, PluginData, Context
 from omnitool_plugin_base.plugin.base import PluginDefinition, ContextResource
-from omnitool.plugin.base import Context
 
 
 def test_load_data_loads_resources(mocker, configuration_model):
@@ -14,11 +13,12 @@ def test_load_data_loads_resources(mocker, configuration_model):
         context_name: Context(
             resources={
                 resource_name: mocker.Mock(spec=ContextResource)
-                for resource_name in context_configuration.resources.keys()            },
-            configuration=context_configuration
+                for resource_name in context_configuration.resources.keys()
+            }
         )
         for context_name, context_configuration in configuration_model.contexts.items()
     }
+    expected_data = PluginData(contexts=expected_contexts)
     expected_calls = [
         mocker.call(configurations=list(context_configuration.resources.values()))
         for context_configuration in configuration_model.contexts.values()
@@ -30,9 +30,9 @@ def test_load_data_loads_resources(mocker, configuration_model):
         for context in expected_contexts.values()
     ]
 
-    actual_contexts = load_data("test_plugin", configuration_model, mock_plugin_definition)
+    actual_data = load_data("test_plugin", configuration_model, mock_plugin_definition)
 
-    assert actual_contexts == expected_contexts
+    assert actual_data == expected_data
     assert mock_plugin_definition.resource_loader_function.call_count == len(configuration_model.contexts)
     mock_plugin_definition.resource_loader_function.assert_has_calls(expected_calls)
 
@@ -47,7 +47,7 @@ def test_load_data_handles_empty_contexts(mocker):
 
     result = load_data("test_plugin", configuration_model, mock_plugin_definition)
 
-    assert result == {}
+    assert result == PluginData(contexts={})
     mock_plugin_definition.resource_loader_function.assert_not_called()
 
 

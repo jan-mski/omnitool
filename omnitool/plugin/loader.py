@@ -3,7 +3,7 @@ import logging
 from omnitool.plugin import finder
 from omnitool.plugin.base import Plugin
 from omnitool.plugin.configuration import load_configuration, PluginConfiguration
-from omnitool.plugin.data import load_data
+from omnitool.plugin.data import load_data, PluginData
 from omnitool.plugin.finder import PluginLocation
 from omnitool_plugin_base.plugin.base import PluginDefinition
 
@@ -46,9 +46,9 @@ def _load_plugin(plugin_location: PluginLocation) -> Plugin:
     _validate_plugin_definition(plugin_definition)
 
     plugin_configuration: PluginConfiguration = load_configuration(plugin_location.plugin_name)
-    plugin_contexts = load_data(plugin_location.plugin_name, plugin_configuration, plugin_definition)
+    plugin_data: PluginData = load_data(plugin_location.plugin_name, plugin_configuration, plugin_definition)
 
-    return Plugin(plugin_contexts, plugin_definition, plugin_location)
+    return Plugin(data=plugin_data, configuration=plugin_configuration, definition=plugin_definition, location=plugin_location)
 
 
 def _validate_plugin_definition(plugin_definition: PluginDefinition) -> None:
