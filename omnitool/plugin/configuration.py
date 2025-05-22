@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Dict, Optional, Annotated
+from typing import Optional, Annotated
 
 from pydantic import BaseModel, Field, BeforeValidator
 
@@ -38,7 +38,7 @@ class PluginConfiguration(BaseModel):
 
 class PluginConfigurationLoadError(Exception):
     def __init__(self, additional_info: str):
-        super().__init__(f"Could not load plugin: {additional_info}")
+        super().__init__(f"Could not load plugin configuration: {additional_info}")
 
 
 def load_configuration(plugin_name: str) -> PluginConfiguration:
@@ -57,7 +57,7 @@ def load_configuration(plugin_name: str) -> PluginConfiguration:
     try:
         configuration_file = _get_configuration_file_path(plugin_name)
     except ValueError as e:
-        raise PluginConfigurationLoadError(f"Could not load plugin configuration: {e}")
+        raise PluginConfigurationLoadError(str(e)) from e
 
     logger.debug(f"Reading configuration file '{configuration_file}'")
 

@@ -40,7 +40,7 @@ def plugin_location(mocker):
 
 
 @pytest.fixture
-def plugin(plugin_configuration_mock, plugin_definition, plugin_location):
+def plugin(plugin_configuration_mock, plugin_definition, plugin_location, plugin_contexts):
     """
     Creates a Plugin instance using the provided fixtures.
 
@@ -48,7 +48,7 @@ def plugin(plugin_configuration_mock, plugin_definition, plugin_location):
         Plugin: A plugin instance for testing
     """
     return Plugin(
-        configuration=plugin_configuration_mock,
+        contexts=plugin_contexts,
         definition=plugin_definition,
         location=plugin_location
     )
