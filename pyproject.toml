@@ -21,7 +21,6 @@ packages = [
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.5"
-pytest-cov = "^6.0.0"
 pytest-mock = "^3.14.0"
 factory-boy = "^3.3.3"
 

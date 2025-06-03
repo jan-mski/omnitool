@@ -1,77 +1,59 @@
-import json
 from pathlib import Path
 
 import pytest
 
-from omnitool.plugin.configuration import (
-    ContextResourceConfiguration,
-    PluginConfiguration,
-    _PluginConfigurationService,
-    plugin_configuration_service,
-    PluginConfigurationLoadError,
-)
-from omnitool_plugin_base.plugin.data import ContextResourceLocation
-from tests.plugin.utils import ContextResourceDataStub
+import omnitool.plugin.configuration
+from omnitool.plugin.base import PluginLocation, PluginModule
+from omnitool.plugin.configuration import (PluginConfiguration, load_configuration, PluginConfigurationLoadError,
+                                           PLUGIN_CONFIGURATION_FILE_NAME)
 
 
 @pytest.fixture
-def configuration_json():
+def mock_plugin_module(mocker) -> PluginModule:
     """
-    Provides a test configuration in JSON format with sample contexts and resources.
+    Creates a mock PluginModule for testing.
 
     Returns:
-        dict: A nested dictionary representing plugin configuration with contexts and resources
+        Mock: A mock PluginModule with a name property
     """
-    return {
-        "contexts": {
-            "context1": {
-                "name": "Context 1",
-                "resources": {
-                    "resource1": {
-                        "name": "Resource 1",
-                        "location": {
-                            "path": "path/to/resource1",
-                        },
-                    },
-                    "resource2": {
-                        "name": "Resource 2",
-                        "location": {
-                            "path": "path/to/resource2",
-                        },
-                    },
-                },
-            },
-            "context2": {
-                "name": "Context 2",
-                "resources": {
-                    "resource3": {
-                        "name": "Resource 3",
-                        "location": {
-                            "path": "path/to/resource3",
-                        },
-                    },
-                },
-            },
-        },
-    }
+    mock_module = mocker.Mock(spec=PluginModule)
+    mock_module.name = "test_plugin"
+
+    return mock_module
 
 
 @pytest.fixture
-def create_configuration_file(tmp_path, configuration_json):
-    def _create_configuration_file(write: bool = True):
+def plugin_location(mock_plugin_module) -> PluginLocation:
+    """
+    Creates a PluginLocation for testing.
+
+    Args:
+        mock_plugin_module: A mock PluginModule
+
+    Returns:
+        PluginLocation: A PluginLocation with the mock PluginModule
+    """
+    return PluginLocation(plugin_module=mock_plugin_module)
+
+
+@pytest.fixture
+def create_configuration_file(configuration_json) -> callable:
+    def _create_configuration_file(plugin_configurations_dir: Path, plugin_name: str, write: bool = True) -> Path:
         """
         Creates a temporary configuration file for testing.
 
         Args:
+            plugin_configurations_dir: The base directory for plugin configurations
+            plugin_name: The name of the plugin
             write: Whether to write the configuration JSON to the file (default: True)
 
         Returns:
             Path: Path to the created configuration file
         """
-        configuration_file = tmp_path / "configuration.json"
+        configuration_file = plugin_configurations_dir / plugin_name / PLUGIN_CONFIGURATION_FILE_NAME
 
         if write:
-            configuration_file.write_text(json.dumps(configuration_json))
+            configuration_file.write_text(configuration_json)
 
         return configuration_file
 
@@ -79,39 +61,33 @@ def create_configuration_file(tmp_path, configuration_json):
 
 
 @pytest.fixture
-def configuration_service(create_configuration_file):
-    """
-    Creates a plugin configuration service instance for testing.
+def mock_plugin_configurations(mocker, tmp_path) -> callable:
+    def _mock_plugin_configurations(plugin_names: list[str] = None, create_dirs: bool = True) -> Path:
+        """
+        Sets up plugin configuration paths for testing.
 
-    Args:
-        create_configuration_file: Fixture that creates the configuration file
+        Args:
+            plugin_names: List of plugin names to configure
+            create_dirs: Whether to create plugin directories
 
-    Returns:
-        _PluginConfigurationService: A configuration service instance with test configuration
-    """
-    configuration_file = create_configuration_file()
+        Returns:
+            The base plugin configurations directory path
+        """
+        plugin_names = plugin_names or []
 
-    return _PluginConfigurationService(configuration_file=configuration_file,
-                                       resource_data_type=ContextResourceDataStub)
+        plugin_configurations_dir = tmp_path / "plugins"
+        plugin_configurations_dir.mkdir(parents=True, exist_ok=True)
+        mocker.patch.object(omnitool.plugin.configuration.settings, "PLUGIN_CONFIGURATIONS_PATH",
+                            plugin_configurations_dir)
 
+        if create_dirs:
+            for plugin_name in plugin_names:
+                plugin_dir = plugin_configurations_dir / plugin_name
+                plugin_dir.mkdir(parents=True, exist_ok=True)
 
-@pytest.fixture
-def loaded_configuration_model(configuration_json):
-    """
-    Creates a validated PluginConfiguration model with test data.
+        return plugin_configurations_dir
 
-    Args:
-        configuration_json: The test configuration data
-
-    Returns:
-        PluginConfiguration: A validated configuration model with populated resource data
-    """
-    loaded_configuration_model = PluginConfiguration.model_validate(configuration_json)
-
-    for resource in loaded_configuration_model.resources.values():
-        resource.data = ContextResourceDataStub(resource.location.path)
-
-    return loaded_configuration_model
+    return _mock_plugin_configurations
 
 
 def test_plugin_configuration_empty():
@@ -122,116 +98,77 @@ def test_plugin_configuration_empty():
     empty_configuration = PluginConfiguration()
 
     assert empty_configuration.contexts == {}
-    assert empty_configuration.resources == {}
 
-def test_plugin_configuration_resources(configuration_json):
+
+def test_plugin_configuration_resources(configuration_json, configuration_model):
     """
     Tests that a PluginConfiguration correctly loads resource data from JSON.
     Expects the model dump to match the expected paths structure.
     """
-    configuration_model = PluginConfiguration.model_validate(configuration_json)
+    actual_configuration = PluginConfiguration.model_validate_json(configuration_json)
 
-    expected_paths = json.loads(json.dumps(configuration_json))  # Deep copy
-    for context in expected_paths["contexts"].values():
-        for resource in context["resources"].values():
-            resource["location"]["path"] = Path(resource["location"]["path"])
-
-    assert configuration_model.model_dump() == expected_paths
+    assert actual_configuration == configuration_model
 
 
-def test_load_configuration(configuration_service, loaded_configuration_model):
+def test_load_configuration(create_configuration_file, configuration_model, mock_plugin_configurations):
     """
     Tests that configuration loading works correctly.
-    Expects the internal configuration to match the loaded model.
+    Expects the loaded configuration to match the expected model.
     """
-    configuration_service.load_configuration()
+    plugin_name = "test_plugin"
 
-    assert configuration_service._configuration == loaded_configuration_model
+    plugin_configurations_dir = mock_plugin_configurations([plugin_name])
+    create_configuration_file(plugin_configurations_dir, plugin_name)
 
-def test_load_configuration_nonexistent_file(create_configuration_file):
+    loaded_configuration = load_configuration(plugin_name)
+
+    assert loaded_configuration == configuration_model
+
+
+def test_load_configuration_nonexistent_file(create_configuration_file, mock_plugin_configurations):
     """
     Tests that loading from a nonexistent file creates a default configuration.
     Expects an empty configuration to be created and the configuration file to be written.
     """
-    configuration_file = create_configuration_file(write=False)
-    configuration_service = _PluginConfigurationService(configuration_file=configuration_file,
-                                                        resource_data_type=ContextResourceDataStub)
-    expected_file_content = PluginConfiguration().model_dump_json(indent=2)
+    default_plugin_configuration = PluginConfiguration()
+    expected_file_content = default_plugin_configuration.model_dump_json(indent=2)
+    plugin_name = "test_plugin"
 
-    configuration_service.load_configuration()
+    plugin_configurations_dir = mock_plugin_configurations([plugin_name])
+    configuration_file = create_configuration_file(plugin_configurations_dir, plugin_name, write=False)
 
-    assert configuration_service.get_contexts() == {}
+    configuration = load_configuration(plugin_name)
+
+    assert configuration.contexts == {}
     assert configuration_file.is_file()
     assert configuration_file.read_text(encoding="utf-8") == expected_file_content
 
-def test_load_configuration_not_a_file(tmp_path):
+
+def test_load_configuration_not_a_file(mock_plugin_configurations):
     """
     Tests that loading from a path that is not a file raises an exception.
     Expects the exception to be raised when the configuration path is a directory.
     """
-    configuration_dir = tmp_path / "config_dir"
-    configuration_dir.mkdir()
+    plugin_name = "test_plugin"
 
-    configuration_service = _PluginConfigurationService(configuration_file=configuration_dir,
-                                                        resource_data_type=ContextResourceDataStub)
+    plugin_configurations_dir = mock_plugin_configurations([plugin_name])
+    (plugin_configurations_dir / plugin_name / PLUGIN_CONFIGURATION_FILE_NAME).mkdir()
 
-    with pytest.raises(PluginConfigurationLoadError) as exc_info:
-        configuration_service.load_configuration()
+    with pytest.raises(PluginConfigurationLoadError):
+        load_configuration(plugin_name)
 
-    assert f"Configuration file '{configuration_dir}' is not a file" in str(exc_info.value)
 
-def test_get_contexts(configuration_service, loaded_configuration_model):
+def test_load_configuration_not_a_directory(mock_plugin_configurations):
     """
-    Tests that contexts can be retrieved correctly.
-    Expects the returned contexts to match those in the loaded configuration model.
+    Tests that find_plugins ignores a plugin configuration directory when it exists but is not a directory.
+    Expects the exception to be raised when the configuration path is not a directory.
     """
-    configuration_service.load_configuration()
+    plugin_name = "test_plugin"
 
-    contexts = configuration_service.get_contexts()
+    plugin_configurations_path = mock_plugin_configurations([plugin_name], create_dirs=False)
 
-    assert len(contexts) == len(loaded_configuration_model.contexts)
+    plugin_dir_path = plugin_configurations_path / plugin_name
+    plugin_dir_path.write_text("not a directory")
 
-    for context_id, context in contexts.items():
-        assert context_id in loaded_configuration_model.contexts
-        assert context == loaded_configuration_model.contexts[context_id]
-
-def test_add_resource(configuration_service, create_configuration_file, loaded_configuration_model):
-    """
-    Tests that a new resource can be added to a context.
-    Expects the configuration to be updated with the new resource and saved to file.
-    """
-    configuration_service.load_configuration()
-
-    context_id = list(loaded_configuration_model.contexts.keys())[0]
-    resource = ContextResourceConfiguration(
-        name="New Resource",
-        location=ContextResourceLocation(path=Path("path/to/new_resource"))
-    )
-    resource_id = configuration_service.add_resource(context_id, resource)
-
-    expected_resource = resource.model_copy(update={"data": ContextResourceDataStub(resource.location.path)})
-    expected_configuration_model = loaded_configuration_model.model_copy(deep=True)
-    expected_configuration_model.contexts[context_id].resources[resource_id] = expected_resource
-    expected_file_content = expected_configuration_model.model_dump_json(indent=2)
-
-    assert len(configuration_service._configuration.resources) == 4
-    assert len(configuration_service._configuration.contexts[context_id].resources) == 3
-    assert configuration_service._configuration.resources[resource_id] == expected_resource
-    assert configuration_service._configuration_file.read_text("utf-8") == expected_file_content
-
-
-def test_plugin_configuration_service(configuration_service, create_configuration_file):
-    """
-    Tests that the plugin_configuration_service factory function works correctly.
-    Expects a properly configured _PluginConfigurationService instance to be returned.
-    """
-    configuration_service.load_configuration()
-
-    configuration_file = create_configuration_file()
-    actual_configuration_service = plugin_configuration_service(configuration_file=configuration_file,
-                                                                resource_data_type=ContextResourceDataStub)
-
-    assert isinstance(actual_configuration_service, _PluginConfigurationService)
-    assert actual_configuration_service._configuration_file == configuration_service._configuration_file
-    assert actual_configuration_service._resource_data_type == configuration_service._resource_data_type
-    assert actual_configuration_service._configuration == configuration_service._configuration
+    with pytest.raises(PluginConfigurationLoadError):
+        load_configuration(plugin_name)

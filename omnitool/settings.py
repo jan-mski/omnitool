@@ -54,19 +54,19 @@ class OmnitoolSettingsLoadError(Exception):
 def load_settings() -> OmnitoolSettings:
     global omnitool_settings
 
-    logger.info("Loading Omnitool settings")
+    logger.debug("Loading Omnitool settings...")
 
     if not OMNITOOL_SETTINGS_FILE_PATH.exists():
-        logger.info("No Omnitool configuration file found, creating default")
+        logger.debug("No Omnitool configuration file found, creating default")
         omnitool_settings = _load_default_settings()
     elif not OMNITOOL_SETTINGS_FILE_PATH.is_file():
         raise OmnitoolSettingsLoadError(f"Path '{OMNITOOL_SETTINGS_FILE_PATH}' does not point to a file")
     else:
         omnitool_settings = _load_settings()
 
-    logger.info("Omnitool settings loaded successfully")
-    logger.info(f"Enabled plugins: {omnitool_settings.plugins.enabled}")
-    logger.info(f"Default plugin: {omnitool_settings.plugins.default}")
+    logger.debug("Omnitool settings loaded successfully")
+    logger.debug(f"Enabled plugins: {omnitool_settings.plugins.enabled}")
+    logger.debug(f"Default plugin: {omnitool_settings.plugins.default}")
 
     return omnitool_settings
 

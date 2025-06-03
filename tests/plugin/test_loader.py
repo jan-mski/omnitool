@@ -4,38 +4,33 @@ import omnitool.plugin.finder
 import omnitool.plugin.configuration
 
 from pathlib import Path
-from omnitool_plugin_base.plugin.base import PluginDefinition
+from omnitool_plugin_base.plugin.base import PluginDefinition, ContextResource
 from omnitool.plugin.base import Plugin, PluginLocation
-from omnitool.plugin.configuration import PluginConfigurationService
-from tests.plugin.utils import ContextResourceDataStub
+from omnitool.plugin.configuration import PluginConfiguration
+from omnitool.plugin.data import PluginData
 
 
 @pytest.fixture
-def mock_plugin_location(mocker) -> callable:
-    def _mock_plugin_location(plugin_name: str,
-                              source: str,
-                              configuration_dir: str,
-                              plugin_definition: PluginDefinition) -> mocker.MagicMock:
+def mock_plugin_location(mocker, tmp_path) -> callable:
+    def _mock_plugin_location(plugin_name: str, plugin_definition: PluginDefinition) -> mocker.MagicMock:
         """
         Creates a mock PluginLocation object for testing.
 
         Args:
             plugin_name: The name of the plugin.
-            source: The source path of the plugin.
-            configuration_dir: The configuration directory of the plugin.
             plugin_definition: The plugin definition object.
 
         Returns:
             MagicMock: A mocked PluginLocation object.
         """
         module_mock = mocker.MagicMock()
-        module_mock.source = source
-        module_mock.name = plugin_name
+        module_mock.source = "plugin_source"
+        module_mock.root_operation_name = plugin_name
 
         location_mock = mocker.MagicMock()
         location_mock.plugin_name = plugin_name
         location_mock.plugin_module = module_mock
-        location_mock.configuration_dir = Path(configuration_dir)
+        location_mock.configuration_dir = Path(tmp_path) / plugin_name
         location_mock.load_module.return_value = plugin_definition
 
         return location_mock
@@ -47,7 +42,7 @@ def mock_plugin_location(mocker) -> callable:
 def logger_mock(mocker):
     """
     Creates a mock for the loader's logger.
-    
+
     Returns:
         MagicMock: A mocked logger object.
     """
@@ -59,11 +54,11 @@ def mock_find_plugins(mocker) -> callable:
     def _mock_find_plugins(plugin_locations: list[PluginLocation] = None):
         """
         Sets up the find_plugins mock to return the specified plugin locations.
-        
+
         Args:
             plugin_locations: List of plugin location mocks to be returned by find_plugins.
                               Defaults to an empty list if None is provided.
-        
+
         Returns:
             MagicMock: The patched find_plugins mock object.
         """
@@ -76,22 +71,94 @@ def mock_find_plugins(mocker) -> callable:
 
 
 @pytest.fixture
-def mock_configuration_service_factory(mocker):
-    def _mock_configuration_service_factory(configuration_services: list[PluginConfigurationService]):
+def mock_load_configuration(mocker):
+    def _mock_load_configuration(configurations: list[PluginConfiguration]):
         """
-        Sets up the plugin_configuration_service mock to return the specified 
-        configuration services.
-        
+        Sets up the load_configuration mock to return the specified 
+        configurations.
+
         Args:
-            configuration_services: List of configuration service mocks to be returned.
+            configurations: List of configuration mocks to be returned.
         """
-        configuration_service_mock = mocker.patch.object(omnitool.plugin.configuration, "plugin_configuration_service")
-        configuration_service_mock.side_effect = configuration_services
+        load_configuration_mock = mocker.patch.object(omnitool.plugin.loader, "load_configuration")
+        load_configuration_mock.side_effect = configurations
 
-    return _mock_configuration_service_factory
+        return load_configuration_mock
+
+    return _mock_load_configuration
 
 
-def test_load_plugins_no_plugins_found(mock_find_plugins, logger_mock):
+@pytest.fixture
+def mock_load_data(mocker):
+    def _mock_load_data(plugin_data_list: list[PluginData]):
+        """
+        Sets up the load_data mock to return the specified data.
+
+        Args:
+            plugin_data_list: List of PluginData objects to be returned.
+        """
+        load_data_mock = mocker.patch.object(omnitool.plugin.loader, "load_data")
+        load_data_mock.side_effect = plugin_data_list
+
+        return load_data_mock
+
+    return _mock_load_data
+
+
+@pytest.fixture
+def create_plugin_definition(context_resource_type) -> callable:
+    def _create_plugin_definition(plugin_name: str) -> PluginDefinition:
+        """
+        Creates a PluginDefinition object for testing.
+
+        Args:
+            plugin_name: The name of the plugin.
+
+        Returns:
+            PluginDefinition: A PluginDefinition object with resource type and loader defined.
+        """
+        definition = PluginDefinition(root_operation_name=plugin_name, resource_type=context_resource_type)
+        definition.resource_loader_function = lambda c: None
+        return definition
+
+    return _create_plugin_definition
+
+
+@pytest.fixture
+def create_plugin(mocker, mock_plugin_location, create_plugin_definition) -> callable:
+    def _create_plugin(plugin_name: str, plugin_definition: PluginDefinition = None) -> Plugin:
+        """
+        Creates a Plugin object with mocked components for testing.
+
+        Args:
+            plugin_name: The name of the plugin.
+            plugin_definition: Optional PluginDefinition object. If not provided, one will be created.
+
+        Returns:
+            Plugin: A Plugin object with mocked location and contexts.
+        """
+        if plugin_definition is None:
+            plugin_definition = create_plugin_definition(plugin_name)
+
+        location_mock = mock_plugin_location(
+            plugin_name=plugin_name,
+            plugin_definition=plugin_definition
+        )
+
+        plugin_data = mocker.MagicMock(spec=PluginData)
+        plugin_configuration = mocker.MagicMock(spec=PluginConfiguration)
+
+        return Plugin(
+            data=plugin_data,
+            configuration=plugin_configuration,
+            definition=plugin_definition,
+            location=location_mock
+        )
+
+    return _create_plugin
+
+
+def test_load_plugins_no_plugins_found(mock_find_plugins):
     """
     Tests the behavior when no plugins are available to load.
     Expects the function to log a warning and return without loading anything.
@@ -100,141 +167,107 @@ def test_load_plugins_no_plugins_found(mock_find_plugins, logger_mock):
 
     loader.load_plugins()
 
-    logger_mock.warning.assert_called_once()
-
     assert loader.loaded_plugins == {}
 
 
 def test_load_plugins_successful_loading(mocker,
-                                         mock_plugin_location,
+                                         create_plugin,
                                          mock_find_plugins,
-                                         mock_configuration_service_factory,
-                                         logger_mock):
+                                         mock_load_configuration,
+                                         mock_load_data):
     """
     Tests the loading of multiple available plugins.
     Expects all plugins to be loaded correctly and stored in the loaded_plugins dictionary.
     """
     plugin1_name = "plugin1"
     plugin2_name = "plugin2"
-    plugin1_definition = PluginDefinition(name=plugin1_name, resource_data_type=ContextResourceDataStub)
-    plugin2_definition = PluginDefinition(name=plugin2_name, resource_data_type=ContextResourceDataStub)
+    plugin1 = create_plugin(plugin1_name)
+    plugin2 = create_plugin(plugin2_name)
 
-    plugin1_location_mock = mock_plugin_location(
-        plugin_name=plugin1_name,
-        source="/path/to/plugin1",
-        configuration_dir="/path/to/plugin1_config",
-        plugin_definition=plugin1_definition
-    )
-    plugin2_location_mock = mock_plugin_location(
-        plugin_name=plugin2_name,
-        source="/path/to/plugin2",
-        configuration_dir="/path/to/plugin2_config",
-        plugin_definition=plugin2_definition
-    )
-    mock_find_plugins([plugin1_location_mock, plugin2_location_mock])
-
-    plugin1_configuration_service_mock = mocker.MagicMock()
-    plugin2_configuration_service_mock = mocker.MagicMock()
-    mock_configuration_service_factory([plugin1_configuration_service_mock, plugin2_configuration_service_mock])
+    mock_find_plugins([plugin1.location, plugin2.location])
+    load_configuration_mock = mock_load_configuration([plugin1.configuration, plugin2.configuration])
+    load_data_mock = mock_load_data([plugin1.data, plugin2.data])
 
     loader.load_plugins()
 
     expected_plugins = {
-        plugin1_name: Plugin(
-            configuration_service=plugin1_configuration_service_mock,
-            definition=plugin1_definition,
-            location=plugin1_location_mock
-        ),
-        plugin2_name: Plugin(
-            configuration_service=plugin2_configuration_service_mock,
-            definition=plugin2_definition,
-            location=plugin2_location_mock
-        )
+        plugin1_name: plugin1,
+        plugin2_name: plugin2
     }
 
     assert loader.loaded_plugins == expected_plugins
 
-    logger_mock.warning.assert_not_called()
+    assert load_configuration_mock.call_count == 2
+    load_configuration_mock.assert_any_call(plugin1_name)
+    load_configuration_mock.assert_any_call(plugin2_name)
+
+    assert load_data_mock.call_count == 2
+    load_data_mock.assert_any_call(plugin1_name, plugin1.configuration, plugin1.definition)
+    load_data_mock.assert_any_call(plugin2_name, plugin2.configuration, plugin2.definition)
 
 
 def test_load_plugins_multiple_plugins_with_exceptions(mocker,
+                                                       create_plugin,
                                                        mock_plugin_location,
                                                        mock_find_plugins,
-                                                       mock_configuration_service_factory,
-                                                       logger_mock):
+                                                       mock_load_configuration,
+                                                       mock_load_data):
     """
     Tests loading multiple plugins where some succeed and some fail.
     Expects successful plugins to be loaded and exceptions to be handled properly
     without affecting other plugins.
     """
     good_plugin_name = "good_plugin"
-    good_plugin_definition = PluginDefinition(name=good_plugin_name, resource_data_type=ContextResourceDataStub)
-    good_plugin_location_mock = mock_plugin_location(
-        plugin_name=good_plugin_name,
-        source="/path/to/good_plugin",
-        configuration_dir="/path/to/good_plugin_config",
-        plugin_definition=good_plugin_definition
-    )
+    good_plugin = create_plugin(good_plugin_name)
 
     bad_plugin1_name = "bad_plugin1"
     bad_plugin1_location_mock = mock_plugin_location(
         plugin_name=bad_plugin1_name,
-        source="/path/to/bad_plugin1",
-        configuration_dir="/path/to/bad_plugin1_config",
         plugin_definition=None
     )
 
-    bad_plugin2_name = "bad_plugin2"
-    bad_plugin2_definition = PluginDefinition(name=bad_plugin2_name, resource_data_type=ContextResourceDataStub)
-    bad_plugin2_location_mock = mock_plugin_location(
-        plugin_name=bad_plugin2_name,
-        source="/path/to/bad_plugin2",
-        configuration_dir="/path/to/bad_plugin2_config",
-        plugin_definition=bad_plugin2_definition
-    )
+    bad_plugin2 = create_plugin("bad_plugin2")
 
-    mock_find_plugins([good_plugin_location_mock, bad_plugin1_location_mock, bad_plugin2_location_mock])
-
-    good_plugin_configuration_service_mock = mocker.MagicMock()
-    mock_configuration_service_factory([
-        good_plugin_configuration_service_mock,
-        Exception("Failed to create configuration service")
+    mock_find_plugins([good_plugin.location, bad_plugin1_location_mock, bad_plugin2.location])
+    load_configuration_mock = mock_load_configuration([
+        good_plugin.configuration,
+        Exception("Failed to load configuration")
     ])
+    load_data_mock = mock_load_data([good_plugin.data])
 
     loader.load_plugins()
 
     expected_plugins = {
-        good_plugin_name: Plugin(
-            configuration_service=good_plugin_configuration_service_mock,
-            definition=good_plugin_definition,
-            location=good_plugin_location_mock
-        )
+        good_plugin_name: good_plugin
     }
 
     assert loader.loaded_plugins == expected_plugins
-    assert logger_mock.warning.call_count == 2
+
+    assert load_configuration_mock.call_count == 2
+    load_configuration_mock.assert_any_call(good_plugin_name)
+    load_configuration_mock.assert_any_call("bad_plugin2")
+    assert load_data_mock.call_count == 1
+    load_data_mock.assert_any_call(good_plugin_name, good_plugin.configuration, good_plugin.definition)
 
 
-def test_load_plugins_all_plugins_fail(mock_plugin_location, mock_find_plugins, logger_mock):
+def test_load_plugins_all_plugins_fail(mock_plugin_location, mock_find_plugins, create_plugin_definition):
     """
     Tests the scenario where all plugins fail to load.
     Expects appropriate warning log for each plugin and an empty loaded_plugins dictionary.
     """
     bad_plugin1_name = "bad_plugin1"
+    bad_plugin1_definition = create_plugin_definition(bad_plugin1_name)
     bad_plugin1_location_mock = mock_plugin_location(
         plugin_name=bad_plugin1_name,
-        source="/path/to/bad_plugin1",
-        configuration_dir="/path/to/bad_plugin1_config",
-        plugin_definition=PluginDefinition(name=bad_plugin1_name, resource_data_type=ContextResourceDataStub)
+        plugin_definition=bad_plugin1_definition
     )
     bad_plugin1_location_mock.load_module.side_effect = ValueError("Invalid plugin definition")
 
     bad_plugin2_name = "bad_plugin2"
+    bad_plugin2_definition = create_plugin_definition(bad_plugin2_name)
     bad_plugin2_location_mock = mock_plugin_location(
         plugin_name=bad_plugin2_name,
-        source="/path/to/bad_plugin2",
-        configuration_dir="/path/to/bad_plugin2_config",
-        plugin_definition=PluginDefinition(name=bad_plugin2_name, resource_data_type=ContextResourceDataStub)
+        plugin_definition=bad_plugin2_definition
     )
     bad_plugin2_location_mock.load_module.side_effect = ImportError("Could not import plugin module")
 
@@ -243,64 +276,116 @@ def test_load_plugins_all_plugins_fail(mock_plugin_location, mock_find_plugins, 
     loader.load_plugins()
 
     assert loader.loaded_plugins == {}
-    assert logger_mock.warning.call_count == 2
 
 
 def test_load_plugins_resets_loaded_plugins(mocker,
-                                            mock_plugin_location,
+                                            create_plugin,
                                             mock_find_plugins,
-                                            mock_configuration_service_factory,
-                                            logger_mock):
+                                            mock_load_configuration,
+                                            mock_load_data):
     """
     Tests that the global loaded_plugins dictionary is reset when the function is called.
     Expects any previously loaded plugins to be removed before loading new ones.
     """
-    plugin1_name = "plugin1"
-    plugin1_definition = PluginDefinition(name=plugin1_name, resource_data_type=ContextResourceDataStub)
-    plugin1_location_mock = mock_plugin_location(
-        plugin_name=plugin1_name,
-        source="/path/to/plugin1",
-        configuration_dir="/path/to/plugin1_config",
-        plugin_definition=plugin1_definition
-    )
+    plugin1 = create_plugin("plugin1")
+    plugin2 = create_plugin("plugin2")
 
-    plugin2_name = "plugin2"
-    plugin2_definition = PluginDefinition(name=plugin2_name, resource_data_type=ContextResourceDataStub)
-    plugin2_location_mock = mock_plugin_location(
-        plugin_name=plugin2_name,
-        source="/path/to/plugin2",
-        configuration_dir="/path/to/plugin2_config",
-        plugin_definition=plugin2_definition
-    )
+    load_configuration_mock1 = mock_load_configuration([plugin1.configuration])
+    mock_find_plugins([plugin1.location])
 
-    plugin1_configuration_service_mock = mocker.MagicMock()
-    mock_configuration_service_factory([plugin1_configuration_service_mock])
-    mock_find_plugins([plugin1_location_mock])
+    load_data_mock1 = mock_load_data([plugin1.data])
 
     loader.load_plugins()
 
     expected_plugins = {
-        plugin1_name: Plugin(
-            configuration_service=plugin1_configuration_service_mock,
-            definition=plugin1_definition,
-            location=plugin1_location_mock
-        )
+        "plugin1": plugin1
     }
 
     assert loader.loaded_plugins == expected_plugins
+    load_configuration_mock1.assert_called_once_with("plugin1")
+    load_data_mock1.assert_called_once_with("plugin1", plugin1.configuration, plugin1.definition)
 
-    plugin2_configuration_service_mock = mocker.MagicMock()
-    mock_configuration_service_factory([plugin2_configuration_service_mock])
-    mock_find_plugins([plugin2_location_mock])
+    load_configuration_mock2 = mock_load_configuration([plugin2.configuration])
+    mock_find_plugins([plugin2.location])
+
+    load_data_mock2 = mock_load_data([plugin2.data])
 
     loader.load_plugins()
 
     expected_plugins = {
-        plugin2_name: Plugin(
-            configuration_service=plugin2_configuration_service_mock,
-            definition=plugin2_definition,
-            location=plugin2_location_mock
-        )
+        "plugin2": plugin2
     }
 
     assert loader.loaded_plugins == expected_plugins
+    load_configuration_mock2.assert_called_once_with("plugin2")
+    load_data_mock2.assert_called_once_with("plugin2", plugin2.configuration, plugin2.definition)
+
+
+def test_load_plugins_invalid_plugin_definition_type(mock_plugin_location, mock_find_plugins, create_plugin_definition):
+    """
+    Tests validation that the plugin definition is of the correct type.
+    Expects the faulty plugin to be skipped and not loaded.
+    """
+    plugin_name = "invalid_plugin"
+    plugin_definition = create_plugin_definition(plugin_name)
+
+    invalid_plugin_location = mock_plugin_location(
+        plugin_name=plugin_name,
+        plugin_definition=plugin_definition
+    )
+    invalid_plugin_location.load_module.return_value = "This is not a PluginDefinition object"
+
+    mock_find_plugins([invalid_plugin_location])
+
+    loader.load_plugins()
+
+    assert loader.loaded_plugins == {}
+
+
+def test_load_plugins_plugin_definition_missing_resource_type(mock_plugin_location,
+                                                              mock_find_plugins):
+    """
+    Tests the scenario where a plugin definition is missing the resource_type.
+    Expects the plugin to be skipped and not loaded.
+    """
+    plugin_name = "missing_resource_type_plugin"
+    plugin_definition = PluginDefinition(root_operation_name=plugin_name)
+
+    @plugin_definition.resource_operation
+    def some_operation():
+        pass
+
+    missing_resource_type_location = mock_plugin_location(
+        plugin_name=plugin_name,
+        plugin_definition=plugin_definition
+    )
+
+    mock_find_plugins([missing_resource_type_location])
+
+    loader.load_plugins()
+
+    assert loader.loaded_plugins == {}
+
+
+def test_load_plugins_plugin_definition_missing_resource_loader(mock_plugin_location,
+                                                                mock_find_plugins,
+                                                                context_resource_type):
+    """
+    Tests the validation of plugin definition resource loader requirement.
+    Expects the plugin to be skipped and not loaded when resource_type is defined but resource_loader_function is missing.
+    """
+    plugin_name = "test_plugin"
+    plugin_definition = PluginDefinition(
+        root_operation_name=plugin_name,
+        resource_type=context_resource_type
+    )
+    plugin_location_mock = mock_plugin_location(
+        plugin_name=plugin_name,
+        plugin_definition=plugin_definition
+    )
+
+    mock_find_plugins([plugin_location_mock])
+
+    loader.load_plugins()
+
+    assert loader.loaded_plugins == {}

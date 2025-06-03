@@ -1,126 +1,113 @@
 import logging
-import uuid
-from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Dict, Type, Optional
+from typing import Optional, Annotated
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field, BeforeValidator
 
-from omnitool_plugin_base.plugin.data import ContextResourceData, ContextResourceLocation
+from omnitool import settings
+from omnitool_plugin_base.plugin.configuration import ResourceConfiguration
 
 
 logger = logging.getLogger(__name__)
 
+PLUGIN_CONFIGURATION_FILE_NAME = "configuration.json"
 
-class ContextResourceConfiguration(BaseModel):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    name: str
-    location: ContextResourceLocation
-    data: ContextResourceData = Field(default=None, init_var=False, exclude=True)
+def _named_configurations_list_to_dict(value: list):
+    return {configuration["name"]: configuration for configuration in value} if value else {}
+
+
+ContextsDictType = Annotated[
+    dict[str, "ContextConfiguration"],
+    BeforeValidator(_named_configurations_list_to_dict)
+]
+ResourcesDictType = Annotated[
+    dict[str, ResourceConfiguration],
+    BeforeValidator(_named_configurations_list_to_dict)
+]
 
 
 class ContextConfiguration(BaseModel):
     name: str
-    resources: Dict[str, ContextResourceConfiguration]
+    resources: Optional[ResourcesDictType] = Field(default_factory=dict)
 
 
 class PluginConfiguration(BaseModel):
-    contexts: Optional[Dict[str, ContextConfiguration]] = Field(default_factory=dict)
-
-    @property
-    def resources(self) -> Dict[str, ContextResourceConfiguration]:
-        resources = {}
-
-        for context in self.contexts.values():
-            resources.update(context.resources)
-
-        return resources
-
-
-class PluginConfigurationService(ABC):
-    @abstractmethod
-    def load_configuration(self) -> PluginConfiguration:
-        pass
-
-    @abstractmethod
-    def get_contexts(self) -> Dict[str, ContextConfiguration]:
-        pass
-
-    @abstractmethod
-    def add_resource(self, context_id: str, resource: ContextResourceConfiguration):
-        pass
+    contexts: Optional[ContextsDictType] = Field(default_factory=dict)
 
 
 class PluginConfigurationLoadError(Exception):
     def __init__(self, additional_info: str):
-        super().__init__(f"Could not load plugin: {additional_info}")
+        super().__init__(f"Could not load plugin configuration: {additional_info}")
 
 
-class _PluginConfigurationService(PluginConfigurationService):
-    _configuration_file: Path
-    _configuration: PluginConfiguration
-    _resource_data_type: Type[ContextResourceData]
+def load_configuration(plugin_name: str) -> PluginConfiguration:
+    """
+    Load the configuration for a plugin.
 
-    def __init__(self, configuration_file: Path, resource_data_type: Type[ContextResourceData]):
-        self._configuration_file = configuration_file
-        self._resource_data_type = resource_data_type
+    Args:
+        plugin_name: The name of the plugin
 
-    def load_configuration(self) -> None:
-        self._read_configuration_file()
-        self._load_data()
+    Returns:
+        PluginConfiguration: The loaded configuration
 
-    def get_contexts(self) -> Dict[str, ContextConfiguration]:
-        return self._configuration.contexts
+    Raises:
+        PluginConfigurationLoadError: If the configuration file is not a file
+    """
+    try:
+        configuration_file = _get_configuration_file_path(plugin_name)
+    except Exception as e:
+        raise PluginConfigurationLoadError(str(e)) from e
 
-    def add_resource(self, context_id: str, resource: ContextResourceConfiguration) -> str:
-        identifier = self._create_identifier()
-        resource.data = self._load_resource_data(resource)
-        self._configuration.contexts[context_id].resources[identifier] = resource
-        self._save_configuration()
+    logger.debug(f"Reading configuration file '{configuration_file}'")
 
-        return identifier
+    if configuration_file.exists():
+        configuration_json = configuration_file.read_text(encoding="utf-8")
+        configuration = PluginConfiguration.model_validate_json(configuration_json)
+        logger.debug("Configuration file read successfully")
+    else:
+        logger.debug("Configuration file not found, creating")
+        configuration = PluginConfiguration()
+        _save_configuration(configuration, configuration_file)
 
-    def _read_configuration_file(self) -> None:
-        logger.debug(f"Reading configuration file '{self._configuration_file}'")
-
-        if not self._configuration_file.exists():
-            logger.debug("Configuration file not found, creating")
-            self._configuration = PluginConfiguration()
-            self._save_configuration()
-        elif not self._configuration_file.is_file():
-            raise PluginConfigurationLoadError(f"Configuration file '{self._configuration_file}' is not a file")
-        else:
-            configuration_json = self._configuration_file.read_text(encoding="utf-8")
-            self._configuration = PluginConfiguration.model_validate_json(configuration_json)
-            logger.debug("Configuration file read successfully")
-
-    def _load_data(self) -> None:
-        logger.debug(f"Loading data based on configuration file '{self._configuration_file}'")
-
-        for resource in self._configuration.resources.values():
-            resource.data = self._load_resource_data(resource)
-
-        logger.debug("Data loaded successfully")
-
-    def _load_resource_data(self, resource: ContextResourceConfiguration) -> ContextResourceData:
-        return self._resource_data_type.load(resource.location)
-
-    def _create_identifier(self) -> str:
-        return str(uuid.uuid4())
-
-    def _save_configuration(self) -> None:
-        logger.debug(f"Saving configuration to file '{self._configuration_file}'")
-
-        configuration_json = self._configuration.model_dump_json(indent=2)
-        self._configuration_file.write_text(configuration_json, "utf-8")
-
-        logger.debug("Configuration saved successfully")
+    return configuration
 
 
-def plugin_configuration_service(configuration_file: Path,
-                                 resource_data_type: Type[ContextResourceData]) -> PluginConfigurationService:
-    configuration_service = _PluginConfigurationService(configuration_file, resource_data_type)
-    configuration_service.load_configuration()
+def _get_configuration_file_path(plugin_name: str) -> Path:
+    configuration_dir = _find_plugin_configuration_dir(plugin_name)
+    _validate_configuration_dir(configuration_dir)
 
-    return configuration_service
+    configuration_file_path = configuration_dir / PLUGIN_CONFIGURATION_FILE_NAME
+    _validate_configuration_file_path(configuration_file_path)
+
+    return configuration_file_path
+
+
+def _save_configuration(configuration: PluginConfiguration, configuration_file: Path) -> None:
+    logger.debug(f"Saving configuration to file '{configuration_file}'")
+
+    configuration_json = configuration.model_dump_json(indent=2)
+    configuration_file.write_text(configuration_json, "utf-8")
+
+    logger.debug("Configuration saved successfully")
+
+
+def _find_plugin_configuration_dir(plugin_name: str) -> Path:
+    configuration_dir = settings.PLUGIN_CONFIGURATIONS_PATH / plugin_name
+
+    if not configuration_dir.exists():
+        configuration_dir.mkdir(parents=True)
+
+    logger.debug(f"Plugin configuration directory for '{plugin_name}' is '{configuration_dir}'")
+
+    return configuration_dir
+
+
+def _validate_configuration_dir(configuration_dir: Path) -> None:
+    if configuration_dir.exists() and not configuration_dir.is_dir():
+        raise ValueError(f"Plugin configuration directory '{configuration_dir}' is not a directory")
+
+
+def _validate_configuration_file_path(configuration_file_path: Path) -> None:
+    if configuration_file_path.exists() and not configuration_file_path.is_file():
+        raise ValueError(f"Plugin configuration file '{configuration_file_path}' is not a file")
