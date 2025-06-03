@@ -1,4 +1,3 @@
-import json
 from pathlib import Path
 
 import pytest
@@ -10,7 +9,7 @@ from omnitool.plugin.configuration import (PluginConfiguration, load_configurati
 
 
 @pytest.fixture
-def mock_plugin_module(mocker):
+def mock_plugin_module(mocker) -> PluginModule:
     """
     Creates a mock PluginModule for testing.
 
@@ -24,7 +23,7 @@ def mock_plugin_module(mocker):
 
 
 @pytest.fixture
-def plugin_location(mock_plugin_module):
+def plugin_location(mock_plugin_module) -> PluginLocation:
     """
     Creates a PluginLocation for testing.
 
@@ -38,8 +37,8 @@ def plugin_location(mock_plugin_module):
 
 
 @pytest.fixture
-def create_configuration_file(configuration_json):
-    def _create_configuration_file(plugin_configurations_dir: Path, plugin_name: str, write: bool = True):
+def create_configuration_file(configuration_json) -> callable:
+    def _create_configuration_file(plugin_configurations_dir: Path, plugin_name: str, write: bool = True) -> Path:
         """
         Creates a temporary configuration file for testing.
 
@@ -62,7 +61,7 @@ def create_configuration_file(configuration_json):
 
 
 @pytest.fixture
-def mock_plugin_configurations(mocker, tmp_path):
+def mock_plugin_configurations(mocker, tmp_path) -> callable:
     def _mock_plugin_configurations(plugin_names: list[str] = None, create_dirs: bool = True) -> Path:
         """
         Sets up plugin configuration paths for testing.
@@ -81,12 +80,10 @@ def mock_plugin_configurations(mocker, tmp_path):
         mocker.patch.object(omnitool.plugin.configuration.settings, "PLUGIN_CONFIGURATIONS_PATH",
                             plugin_configurations_dir)
 
-        for plugin_name in plugin_names:
-            if not create_dirs:
-                continue
-
-            plugin_dir = plugin_configurations_dir / plugin_name
-            plugin_dir.mkdir(parents=True, exist_ok=True)
+        if create_dirs:
+            for plugin_name in plugin_names:
+                plugin_dir = plugin_configurations_dir / plugin_name
+                plugin_dir.mkdir(parents=True, exist_ok=True)
 
         return plugin_configurations_dir
 
@@ -108,22 +105,9 @@ def test_plugin_configuration_resources(configuration_json, configuration_model)
     Tests that a PluginConfiguration correctly loads resource data from JSON.
     Expects the model dump to match the expected paths structure.
     """
-    expected_paths = json.loads(configuration_json)  # Deep copy
-    expected_paths["contexts"] = {  # Convert nested lists to dicts keyed by name
-        context["name"]: {
-            **context,
-            "resources": {
-                resource["name"]: {
-                    **resource,
-                    "location": {"path": Path(resource["location"]["path"])}
-                }
-                for resource in context["resources"]
-            }
-        }
-        for context in expected_paths["contexts"]
-    }
+    actual_configuration = PluginConfiguration.model_validate_json(configuration_json)
 
-    assert configuration_model.model_dump() == expected_paths
+    assert actual_configuration == configuration_model
 
 
 def test_load_configuration(create_configuration_file, configuration_model, mock_plugin_configurations):

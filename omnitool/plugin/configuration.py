@@ -56,7 +56,7 @@ def load_configuration(plugin_name: str) -> PluginConfiguration:
     """
     try:
         configuration_file = _get_configuration_file_path(plugin_name)
-    except ValueError as e:
+    except Exception as e:
         raise PluginConfigurationLoadError(str(e)) from e
 
     logger.debug(f"Reading configuration file '{configuration_file}'")

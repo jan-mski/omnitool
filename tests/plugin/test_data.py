@@ -33,7 +33,7 @@ def test_load_data_loads_resources(mocker, configuration_model):
     actual_data = load_data("test_plugin", configuration_model, mock_plugin_definition)
 
     assert actual_data == expected_data
-    assert mock_plugin_definition.resource_loader_function.call_count == len(configuration_model.contexts)
+    assert mock_plugin_definition.resource_loader_function.call_count == len(expected_calls)
     mock_plugin_definition.resource_loader_function.assert_has_calls(expected_calls)
 
 

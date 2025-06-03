@@ -36,7 +36,7 @@ def load_plugins() -> None:
                 logger.debug(f"Plugin '{loaded_plugin.name}' loaded from '{plugin_location.plugin_module.source}'")
         except Exception as e:
             logger.debug(f"Failed to load plugin '{plugin_location.plugin_name}' "
-                         f"from {plugin_location.plugin_module.source}", e)
+                         f"from {plugin_location.plugin_module.source}", exc_info=e)
 
     logger.debug(f"Plugins loaded: {list(loaded_plugins.keys())}")
 

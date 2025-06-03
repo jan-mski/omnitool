@@ -1,8 +1,10 @@
 import json
 import pytest
 
+from pathlib import Path
 from omnitool_plugin_base.plugin.base import ContextResource
-from omnitool.plugin.configuration import PluginConfiguration
+from omnitool.plugin.configuration import PluginConfiguration, ContextConfiguration, ResourceConfiguration
+from omnitool_plugin_base.plugin.configuration import ResourceLocation
 
 
 @pytest.fixture
@@ -59,4 +61,27 @@ def configuration_model(configuration_json):
     Returns:
         PluginConfiguration: A validated configuration model with populated resource data
     """
-    return PluginConfiguration.model_validate_json(configuration_json)
+    return PluginConfiguration(contexts=[
+        {
+            "name": "Context 1",
+            "resources": [
+                {
+                    "name": "Resource 1",
+                    "location": {
+                        "path": "path/to/resource1"
+                    }
+                },
+                {
+                    "name": "Resource 2",
+                    "location": {
+                        "path": "path/to/resource2"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Context 2",
+            "resources": {}
+        }
+    ]
+    )

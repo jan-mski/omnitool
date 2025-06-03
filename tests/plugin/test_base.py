@@ -7,7 +7,7 @@ from omnitool.plugin.data import PluginData
 
 
 @pytest.fixture
-def plugin_configuration_mock(mocker):
+def plugin_configuration_mock(mocker) -> PluginConfiguration:
     """
     Creates a mock PluginConfiguration for testing.
 
@@ -18,7 +18,7 @@ def plugin_configuration_mock(mocker):
 
 
 @pytest.fixture
-def plugin_data_mock(mocker):
+def plugin_data_mock(mocker) -> PluginData:
     """
     Creates a mock PluginData for testing.
 
@@ -29,7 +29,7 @@ def plugin_data_mock(mocker):
 
 
 @pytest.fixture
-def plugin_definition(context_resource_type):
+def plugin_definition(context_resource_type) -> PluginDefinition:
     """
     Creates a test PluginDefinition with a fixed name and resource data type.
 
@@ -40,7 +40,7 @@ def plugin_definition(context_resource_type):
 
 
 @pytest.fixture
-def plugin_location(mocker):
+def plugin_location(mocker) -> PluginLocation:
     """
     Creates a test PluginLocation with a mock plugin module.
 
@@ -52,7 +52,7 @@ def plugin_location(mocker):
 
 
 @pytest.fixture
-def plugin(plugin_configuration_mock, plugin_data_mock, plugin_definition, plugin_location):
+def plugin(plugin_configuration_mock, plugin_data_mock, plugin_definition, plugin_location) -> Plugin:
     """
     Creates a Plugin instance using the provided fixtures.
 
@@ -72,11 +72,11 @@ def test_plugin(plugin, plugin_location, plugin_configuration_mock, plugin_data_
     Tests that the plugin's name property correctly returns the name from the plugin definition.
     Expects the plugin name to match the name in the plugin definition.
     """
-    assert plugin.name == plugin_location.plugin_name
-    assert plugin.data == plugin_data_mock
-    assert plugin.configuration == plugin_configuration_mock
-    assert plugin.definition == plugin_definition
-    assert plugin.location == plugin_location
+    actual = Plugin(data=plugin_data_mock,
+                    configuration=plugin_configuration_mock,
+                    definition=plugin_definition,
+                    location=plugin_location)
+    assert actual == plugin
 
 
 def test_plugin_location_plugin_name(plugin_location):
