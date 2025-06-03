@@ -71,6 +71,6 @@ def load_data(plugin_name: str,
 
 def _load_resources(resource_loader_function: ResourceLoaderProtocol,
                     resource_configurations: list[ResourceConfiguration]) -> dict[str, ContextResource]:
-    resources: list[ContextResource] = resource_loader_function(configurations=resource_configurations)
+    resources: list[ContextResource] = resource_loader_function(resource_configurations=resource_configurations)
     return {resource_configuration.name: resource
             for resource_configuration, resource in zip(resource_configurations, resources)}

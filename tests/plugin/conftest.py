@@ -1,10 +1,9 @@
 import json
+
 import pytest
 
-from pathlib import Path
+from omnitool.plugin.configuration import PluginConfiguration
 from omnitool_plugin_base.plugin.base import ContextResource
-from omnitool.plugin.configuration import PluginConfiguration, ContextConfiguration, ResourceConfiguration
-from omnitool_plugin_base.plugin.configuration import ResourceLocation
 
 
 @pytest.fixture

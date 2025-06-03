@@ -20,7 +20,7 @@ def test_load_data_loads_resources(mocker, configuration_model):
     }
     expected_data = PluginData(contexts=expected_contexts)
     expected_calls = [
-        mocker.call(configurations=list(context_configuration.resources.values()))
+        mocker.call(resource_configurations=list(context_configuration.resources.values()))
         for context_configuration in configuration_model.contexts.values()
     ]
 
