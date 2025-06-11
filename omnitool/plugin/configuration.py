@@ -2,15 +2,17 @@ import logging
 from pathlib import Path
 from typing import Optional, Annotated
 
-from pydantic import BaseModel, Field, BeforeValidator
+from pydantic import BaseModel, Field, BeforeValidator, ConfigDict
 
 from omnitool import settings
-from omnitool_plugin_base.plugin.configuration import ResourceConfiguration
+from omnitool.plugin.context import Location
 
+
+PLUGIN_CONFIGURATION_FILE_NAME = "configuration.json"
 
 logger = logging.getLogger(__name__)
 
-PLUGIN_CONFIGURATION_FILE_NAME = "configuration.json"
+plugin_configurations: dict[str, "PluginConfiguration"] = {}
 
 
 def _named_configurations_list_to_dict(value: list):
@@ -22,21 +24,41 @@ ContextsDictType = Annotated[
     BeforeValidator(_named_configurations_list_to_dict)
 ]
 ResourcesDictType = Annotated[
-    dict[str, ResourceConfiguration],
+    dict[str, "ResourceConfiguration"],
     BeforeValidator(_named_configurations_list_to_dict)
 ]
 
 
+class ResourceConfiguration(BaseModel):
+    """
+    Configuration for context resources, including a name and location.
+    """
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    name: str
+    location: Location
+
+
 class ContextConfiguration(BaseModel):
+    """
+    Configuration for a plugin context, including a name and resources.
+    """
     name: str
     resources: Optional[ResourcesDictType] = Field(default_factory=dict)
 
 
 class PluginConfiguration(BaseModel):
+    """
+    Configuration for a plugin, including contexts and their resources.
+    """
     contexts: Optional[ContextsDictType] = Field(default_factory=dict)
 
 
 class PluginConfigurationLoadError(Exception):
+    """
+    Exception raised when a plugin configuration cannot be loaded.
+    """
+
     def __init__(self, additional_info: str):
         super().__init__(f"Could not load plugin configuration: {additional_info}")
 
@@ -98,16 +120,16 @@ def _find_plugin_configuration_dir(plugin_name: str) -> Path:
     if not configuration_dir.exists():
         configuration_dir.mkdir(parents=True)
 
-    logger.debug(f"Plugin configuration directory for '{plugin_name}' is '{configuration_dir}'")
+    logger.debug(f"LoadedPlugin configuration directory for '{plugin_name}' is '{configuration_dir}'")
 
     return configuration_dir
 
 
 def _validate_configuration_dir(configuration_dir: Path) -> None:
     if configuration_dir.exists() and not configuration_dir.is_dir():
-        raise ValueError(f"Plugin configuration directory '{configuration_dir}' is not a directory")
+        raise ValueError(f"LoadedPlugin configuration directory '{configuration_dir}' is not a directory")
 
 
 def _validate_configuration_file_path(configuration_file_path: Path) -> None:
     if configuration_file_path.exists() and not configuration_file_path.is_file():
-        raise ValueError(f"Plugin configuration file '{configuration_file_path}' is not a file")
+        raise ValueError(f"LoadedPlugin configuration file '{configuration_file_path}' is not a file")

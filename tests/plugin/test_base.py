@@ -1,7 +1,8 @@
 import pytest
 
-from omnitool.plugin.base import (Plugin, PluginLocation)
-from omnitool_plugin_base.plugin.base import PluginDefinition
+from omnitool.plugin.loader import LoadedPlugin
+from omnitool.plugin.location import PluginLocation
+from omnitool.plugin.definition import PluginDefinition
 from omnitool.plugin.configuration import PluginConfiguration
 from omnitool.plugin.data import PluginData
 
@@ -29,14 +30,14 @@ def plugin_data_mock(mocker) -> PluginData:
 
 
 @pytest.fixture
-def plugin_definition(context_resource_type) -> PluginDefinition:
+def plugin_definition(resource_data_type) -> PluginDefinition:
     """
     Creates a test PluginDefinition with a fixed name and resource data type.
 
     Returns:
         PluginDefinition: A plugin definition for testing
     """
-    return PluginDefinition(root_operation_name="test_plugin", resource_type=context_resource_type)
+    return PluginDefinition(root_operation_name="test_plugin", resource_data_type=resource_data_type)
 
 
 @pytest.fixture
@@ -52,14 +53,14 @@ def plugin_location(mocker) -> PluginLocation:
 
 
 @pytest.fixture
-def plugin(plugin_configuration_mock, plugin_data_mock, plugin_definition, plugin_location) -> Plugin:
+def loaded_plugin(plugin_configuration_mock, plugin_data_mock, plugin_definition, plugin_location) -> LoadedPlugin:
     """
-    Creates a Plugin instance using the provided fixtures.
+    Creates a LoadedPlugin instance using the provided fixtures.
 
     Returns:
-        Plugin: A plugin instance for testing
+        LoadedPlugin: A plugin instance for testing
     """
-    return Plugin(
+    return LoadedPlugin(
         data=plugin_data_mock,
         configuration=plugin_configuration_mock,
         definition=plugin_definition,
@@ -67,16 +68,16 @@ def plugin(plugin_configuration_mock, plugin_data_mock, plugin_definition, plugi
     )
 
 
-def test_plugin(plugin, plugin_location, plugin_configuration_mock, plugin_data_mock, plugin_definition):
+def test_plugin(loaded_plugin, plugin_location, plugin_configuration_mock, plugin_data_mock, plugin_definition):
     """
     Tests that the plugin's name property correctly returns the name from the plugin definition.
     Expects the plugin name to match the name in the plugin definition.
     """
-    actual = Plugin(data=plugin_data_mock,
+    actual = LoadedPlugin(data=plugin_data_mock,
                     configuration=plugin_configuration_mock,
                     definition=plugin_definition,
                     location=plugin_location)
-    assert actual == plugin
+    assert actual == loaded_plugin
 
 
 def test_plugin_location_plugin_name(plugin_location):

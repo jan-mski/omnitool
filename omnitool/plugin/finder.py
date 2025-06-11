@@ -3,7 +3,8 @@ from dataclasses import dataclass
 from importlib.metadata import EntryPoint, entry_points
 
 from omnitool import settings
-from omnitool.plugin.base import PluginLocation, PluginModule, PluginDefinition
+from omnitool.plugin.definition import PluginDefinition
+from omnitool.plugin.location import PluginModule, PluginLocation
 
 
 PLUGIN_ENTRY_POINT_GROUP = "omnitool.plugin"

@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 import omnitool.plugin.configuration
-from omnitool.plugin.base import PluginLocation, PluginModule
+from omnitool.plugin.location import PluginModule, PluginLocation
 from omnitool.plugin.configuration import (PluginConfiguration, load_configuration, PluginConfigurationLoadError,
                                            PLUGIN_CONFIGURATION_FILE_NAME)
 

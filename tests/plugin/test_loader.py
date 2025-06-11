@@ -1,13 +1,14 @@
-import pytest
-import omnitool.plugin.loader as loader
-import omnitool.plugin.finder
-import omnitool.plugin.configuration
-
 from pathlib import Path
-from omnitool_plugin_base.plugin.base import PluginDefinition, ContextResource
-from omnitool.plugin.base import Plugin, PluginLocation
+
+import pytest
+
+import omnitool.plugin.finder as finder
+import omnitool.plugin.loader as loader
+from omnitool.plugin.loader import LoadedPlugin
 from omnitool.plugin.configuration import PluginConfiguration
 from omnitool.plugin.data import PluginData
+from omnitool.plugin.location import PluginLocation
+from omnitool.plugin.definition import PluginDefinition
 
 
 @pytest.fixture
@@ -65,7 +66,7 @@ def mock_find_plugins(mocker) -> callable:
         if plugin_locations is None:
             plugin_locations = []
 
-        mocker.patch.object(omnitool.plugin.finder, "find_plugins", return_value=plugin_locations)
+        mocker.patch.object(finder, "find_plugins", return_value=plugin_locations)
 
     return _mock_find_plugins
 
@@ -80,7 +81,7 @@ def mock_load_configuration(mocker):
         Args:
             configurations: List of configuration mocks to be returned.
         """
-        load_configuration_mock = mocker.patch.object(omnitool.plugin.loader, "load_configuration")
+        load_configuration_mock = mocker.patch.object(loader, "load_configuration")
         load_configuration_mock.side_effect = configurations
 
         return load_configuration_mock
@@ -97,7 +98,7 @@ def mock_load_data(mocker):
         Args:
             plugin_data_list: List of PluginData objects to be returned.
         """
-        load_data_mock = mocker.patch.object(omnitool.plugin.loader, "load_data")
+        load_data_mock = mocker.patch.object(loader, "load_data")
         load_data_mock.side_effect = plugin_data_list
 
         return load_data_mock
@@ -106,7 +107,7 @@ def mock_load_data(mocker):
 
 
 @pytest.fixture
-def create_plugin_definition(context_resource_type) -> callable:
+def create_plugin_definition(resource_data_type) -> callable:
     def _create_plugin_definition(plugin_name: str) -> PluginDefinition:
         """
         Creates a PluginDefinition object for testing.
@@ -117,8 +118,8 @@ def create_plugin_definition(context_resource_type) -> callable:
         Returns:
             PluginDefinition: A PluginDefinition object with resource type and loader defined.
         """
-        definition = PluginDefinition(root_operation_name=plugin_name, resource_type=context_resource_type)
-        definition.resource_loader_function = lambda c: None
+        definition = PluginDefinition(root_operation_name=plugin_name, resource_data_type=resource_data_type)
+        definition.context_loader_function = lambda c: None
         return definition
 
     return _create_plugin_definition
@@ -126,16 +127,16 @@ def create_plugin_definition(context_resource_type) -> callable:
 
 @pytest.fixture
 def create_plugin(mocker, mock_plugin_location, create_plugin_definition) -> callable:
-    def _create_plugin(plugin_name: str, plugin_definition: PluginDefinition = None) -> Plugin:
+    def _create_plugin(plugin_name: str, plugin_definition: PluginDefinition = None) -> LoadedPlugin:
         """
-        Creates a Plugin object with mocked components for testing.
+        Creates a LoadedPlugin object with mocked components for testing.
 
         Args:
             plugin_name: The name of the plugin.
             plugin_definition: Optional PluginDefinition object. If not provided, one will be created.
 
         Returns:
-            Plugin: A Plugin object with mocked location and contexts.
+            LoadedPlugin: A LoadedPlugin object with mocked location and contexts.
         """
         if plugin_definition is None:
             plugin_definition = create_plugin_definition(plugin_name)
@@ -148,7 +149,7 @@ def create_plugin(mocker, mock_plugin_location, create_plugin_definition) -> cal
         plugin_data = mocker.MagicMock(spec=PluginData)
         plugin_configuration = mocker.MagicMock(spec=PluginConfiguration)
 
-        return Plugin(
+        return LoadedPlugin(
             data=plugin_data,
             configuration=plugin_configuration,
             definition=plugin_definition,
@@ -342,42 +343,42 @@ def test_load_plugins_invalid_plugin_definition_type(mock_plugin_location, mock_
     assert loader.loaded_plugins == {}
 
 
-def test_load_plugins_plugin_definition_missing_resource_type(mock_plugin_location,
-                                                              mock_find_plugins):
+def test_load_plugins_plugin_definition_missing_resource_data_type(mock_plugin_location,
+                                                                   mock_find_plugins):
     """
-    Tests the scenario where a plugin definition is missing the resource_type.
+    Tests the scenario where a plugin definition is missing the resource_data_type.
     Expects the plugin to be skipped and not loaded.
     """
-    plugin_name = "missing_resource_type_plugin"
+    plugin_name = "missing_resource_data_type_plugin"
     plugin_definition = PluginDefinition(root_operation_name=plugin_name)
 
-    @plugin_definition.resource_operation
+    @plugin_definition.operation
     def some_operation():
         pass
 
-    missing_resource_type_location = mock_plugin_location(
+    missing_resource_data_type_location = mock_plugin_location(
         plugin_name=plugin_name,
         plugin_definition=plugin_definition
     )
 
-    mock_find_plugins([missing_resource_type_location])
+    mock_find_plugins([missing_resource_data_type_location])
 
     loader.load_plugins()
 
     assert loader.loaded_plugins == {}
 
 
-def test_load_plugins_plugin_definition_missing_resource_loader(mock_plugin_location,
-                                                                mock_find_plugins,
-                                                                context_resource_type):
+def test_load_plugins_plugin_definition_missing_context_loader(mock_plugin_location,
+                                                               mock_find_plugins,
+                                                               resource_data_type):
     """
-    Tests the validation of plugin definition resource loader requirement.
-    Expects the plugin to be skipped and not loaded when resource_type is defined but resource_loader_function is missing.
+    Tests the validation of plugin definition context loader requirement.
+    Expects the plugin to be skipped and not loaded when resource_data_type is defined but context_loader_function is missing.
     """
     plugin_name = "test_plugin"
     plugin_definition = PluginDefinition(
         root_operation_name=plugin_name,
-        resource_type=context_resource_type
+        resource_data_type=resource_data_type
     )
     plugin_location_mock = mock_plugin_location(
         plugin_name=plugin_name,

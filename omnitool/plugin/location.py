@@ -1,13 +1,13 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-from omnitool.plugin.configuration import PluginConfiguration
-from omnitool_plugin_base.plugin.base import PluginDefinition
-from omnitool.plugin.data import PluginData
+from omnitool.plugin.definition import PluginDefinition
 
 
 class PluginModule(ABC):
-    loaded: bool = False
+    """
+    Abstract base class for plugin modules.
+    """
 
     @property
     @abstractmethod
@@ -21,11 +21,14 @@ class PluginModule(ABC):
 
     @abstractmethod
     def load(self) -> PluginDefinition:
-        self.loaded = True
+        pass
 
 
 @dataclass
 class PluginLocation:
+    """
+    Represents the location of a plugin.
+    """
     plugin_module: PluginModule
 
     @property
@@ -34,15 +37,3 @@ class PluginLocation:
 
     def load_module(self) -> PluginDefinition:
         return self.plugin_module.load()
-
-
-@dataclass
-class Plugin:
-    data: PluginData
-    configuration: PluginConfiguration
-    definition: PluginDefinition
-    location: PluginLocation
-
-    @property
-    def name(self) -> str:
-        return self.location.plugin_name

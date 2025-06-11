@@ -3,9 +3,9 @@ from importlib.metadata import EntryPoint
 import pytest
 
 import omnitool.plugin
-from omnitool.plugin.base import PluginModule, PluginLocation
+from omnitool.plugin.location import PluginModule, PluginLocation
 from omnitool.plugin.finder import PluginEntryPoint, find_plugins
-from omnitool_plugin_base.plugin.base import PluginDefinition
+from omnitool.plugin.definition import PluginDefinition
 
 
 @pytest.fixture
@@ -93,13 +93,13 @@ def test_plugin_entry_point_name_property(mocker):
     assert plugin_entry_point.name == "test_plugin"
 
 
-def test_plugin_entry_point_load(mocker, context_resource_type):
+def test_plugin_entry_point_load(mocker, resource_data_type):
     """
     Tests that the public load method performs its functionality including calling the underlying load.
     Expects both superclass load and entry_point.load to be executed.
     """
     entry_point = mocker.Mock()
-    plugin_definition = PluginDefinition(root_operation_name="test_plugin", resource_type=context_resource_type)
+    plugin_definition = PluginDefinition(root_operation_name="test_plugin", resource_data_type=resource_data_type)
     entry_point.load.return_value = plugin_definition
     plugin_entry_point = PluginEntryPoint(entry_point=entry_point)
     super_load_mock = mocker.patch.object(PluginModule, "load")

@@ -1,15 +1,28 @@
 import logging
+from dataclasses import dataclass
 
 from omnitool.plugin import finder
-from omnitool.plugin.base import Plugin
 from omnitool.plugin.configuration import load_configuration, PluginConfiguration
 from omnitool.plugin.data import load_data, PluginData
-from omnitool.plugin.finder import PluginLocation
-from omnitool_plugin_base.plugin.base import PluginDefinition
+from omnitool.plugin.definition import PluginDefinition
+from omnitool.plugin.location import PluginLocation
 
 
 logger = logging.getLogger(__name__)
-loaded_plugins: dict[str, Plugin] = {}
+
+loaded_plugins: dict[str, "LoadedPlugin"] = {}
+
+
+@dataclass
+class LoadedPlugin:
+    data: PluginData
+    configuration: PluginConfiguration
+    definition: PluginDefinition
+    location: PluginLocation
+
+    @property
+    def name(self) -> str:
+        return self.location.plugin_name
 
 
 def load_plugins() -> None:
@@ -29,11 +42,11 @@ def load_plugins() -> None:
 
     for plugin_location in plugin_locations:
         try:
-            loaded_plugin: Plugin = _load_plugin(plugin_location)
+            loaded_plugin: LoadedPlugin = _load_plugin(plugin_location)
 
             if loaded_plugin:
                 loaded_plugins[loaded_plugin.name] = loaded_plugin
-                logger.debug(f"Plugin '{loaded_plugin.name}' loaded from '{plugin_location.plugin_module.source}'")
+                logger.debug(f"LoadedPlugin '{loaded_plugin.name}' loaded from '{plugin_location.plugin_module.source}'")
         except Exception as e:
             logger.debug(f"Failed to load plugin '{plugin_location.plugin_name}' "
                          f"from {plugin_location.plugin_module.source}", exc_info=e)
@@ -41,20 +54,25 @@ def load_plugins() -> None:
     logger.debug(f"Plugins loaded: {list(loaded_plugins.keys())}")
 
 
-def _load_plugin(plugin_location: PluginLocation) -> Plugin:
-    plugin_definition: PluginDefinition = plugin_location.load_module()
-    _validate_plugin_definition(plugin_definition)
-
+def _load_plugin(plugin_location: PluginLocation) -> LoadedPlugin:
+    plugin_definition: PluginDefinition = _load_definition(plugin_location)
     plugin_configuration: PluginConfiguration = load_configuration(plugin_location.plugin_name)
     plugin_data: PluginData = load_data(plugin_location.plugin_name, plugin_configuration, plugin_definition)
 
-    return Plugin(data=plugin_data, configuration=plugin_configuration, definition=plugin_definition, location=plugin_location)
+    return LoadedPlugin(data=plugin_data, configuration=plugin_configuration, definition=plugin_definition, location=plugin_location)
 
 
-def _validate_plugin_definition(plugin_definition: PluginDefinition) -> None:
+def _load_definition(plugin_location: PluginLocation) -> PluginDefinition:
+    plugin_definition: PluginDefinition = plugin_location.load_module()
+    _validate_definition(plugin_definition)
+
+    return plugin_definition
+
+
+def _validate_definition(plugin_definition: PluginDefinition) -> None:
     if not isinstance(plugin_definition, PluginDefinition):
-        raise ValueError("Plugin definition must be of type PluginDefinition")
-    if plugin_definition.resource_operations and not plugin_definition.resource_type:
-        raise ValueError("Plugin resource_type must be defined when resource operations are present")
-    if plugin_definition.resource_type and not plugin_definition.resource_loader_function:
-        raise ValueError("Plugin resource_loader_function must be defined when resource_type is present")
+        raise ValueError("LoadedPlugin definition must be of type PluginDefinition")
+    if plugin_definition.operations and not plugin_definition.resource_data_type:
+        raise ValueError("LoadedPlugin resource_data_type must be defined when operations are present")
+    if plugin_definition.resource_data_type and not plugin_definition.context_loader_function:
+        raise ValueError("LoadedPlugin context_loader_function must be defined when resource_data_type is present")

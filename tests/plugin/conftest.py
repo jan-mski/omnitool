@@ -3,15 +3,15 @@ import json
 import pytest
 
 from omnitool.plugin.configuration import PluginConfiguration
-from omnitool_plugin_base.plugin.base import ContextResource
+from omnitool.plugin.context import ResourceData
 
 
 @pytest.fixture
-def context_resource_type():
-    class ContextResourceStub(ContextResource):
+def resource_data_type():
+    class ResourceDataStub(ResourceData):
         pass
 
-    return ContextResourceStub
+    return ResourceDataStub
 
 
 @pytest.fixture

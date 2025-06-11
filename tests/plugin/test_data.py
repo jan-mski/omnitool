@@ -1,46 +1,70 @@
 import pytest
+
 from omnitool.plugin.configuration import PluginConfiguration
-from omnitool.plugin.data import PluginDataLoadError, load_data, PluginData, Context
-from omnitool_plugin_base.plugin.base import PluginDefinition, ContextResource
+from omnitool.plugin.data import PluginDataLoadError, load_data, PluginData, ContextData
+from omnitool.plugin.context import ResourceData, Context
+from omnitool.plugin.definition import PluginDefinition
 
 
-def test_load_data_loads_resources(mocker, configuration_model):
+@pytest.fixture
+def resource_data(resource_data_type) -> ResourceData:
+    """
+    Provides a ResourceData instance for testing purposes.
+    """
+    return resource_data_type()
+
+
+@pytest.fixture
+def context_loader_function(resource_data) -> callable:
+    """
+    Provides a mock context loader function that initializes resources with the given resource data type.
+    """
+    def _context_loader_function(context: Context) -> None:
+        """
+        Mock context loader function that initializes resources with the specified resource data type.
+        """
+        for resource in context.resources.values():
+            resource.data = resource_data
+
+    return _context_loader_function
+
+
+@pytest.fixture
+def plugin_definition(resource_data_type, context_loader_function) -> PluginDefinition:
+    """
+    Provides a mock PluginDefinition for testing purposes.
+    """
+    plugin_definition = PluginDefinition(root_operation_name="test_plugin", resource_data_type=resource_data_type)
+    plugin_definition.context_loader_function = context_loader_function
+
+    return plugin_definition
+
+
+def test_load_data_loads_resources(resource_data, configuration_model, plugin_definition):
     """
     Tests that load_data correctly loads resources for each context and returns the expected mapping.
-    Expects the resource loader function to be called for each context and the loaded resources to be returned.
+    Expects the context loader function to be called for each context and the loaded resources to be returned.
     """
     expected_contexts = {
-        context_name: Context(
+        context_name: ContextData(
             resources={
-                resource_name: mocker.Mock(spec=ContextResource)
+                resource_name: resource_data
                 for resource_name in context_configuration.resources.keys()
             }
         )
         for context_name, context_configuration in configuration_model.contexts.items()
     }
     expected_data = PluginData(contexts=expected_contexts)
-    expected_calls = [
-        mocker.call(resource_configurations=list(context_configuration.resources.values()))
-        for context_configuration in configuration_model.contexts.values()
-    ]
 
-    mock_plugin_definition = mocker.Mock(spec=PluginDefinition)
-    mock_plugin_definition.resource_loader_function.side_effect = [
-        list(context.resources.values())
-        for context in expected_contexts.values()
-    ]
-
-    actual_data = load_data("test_plugin", configuration_model, mock_plugin_definition)
+    actual_data = load_data("test_plugin", configuration_model, plugin_definition)
 
     assert actual_data == expected_data
-    assert mock_plugin_definition.resource_loader_function.call_count == len(expected_calls)
-    mock_plugin_definition.resource_loader_function.assert_has_calls(expected_calls)
 
 
 def test_load_data_handles_empty_contexts(mocker):
     """
     Tests load_data behavior when the plugin configuration has no contexts.
-    Expects the resource loader function not to be called and an empty dict to be returned.
+    Expects the context loader function not to be called and an empty dict to be returned.
     """
     configuration_model = PluginConfiguration()
     mock_plugin_definition = mocker.Mock(spec=PluginDefinition)
@@ -48,16 +72,16 @@ def test_load_data_handles_empty_contexts(mocker):
     result = load_data("test_plugin", configuration_model, mock_plugin_definition)
 
     assert result == PluginData(contexts={})
-    mock_plugin_definition.resource_loader_function.assert_not_called()
+    mock_plugin_definition.context_loader_function.assert_not_called()
 
 
 def test_load_data_handles_exceptions(mocker, configuration_model):
     """
-    Tests that load_data handles exceptions raised by the resource loader function.
+    Tests that load_data handles exceptions raised by the context loader function.
     Expects an exception to be raised.
     """
     mock_plugin_definition = mocker.Mock(spec=PluginDefinition)
-    mock_plugin_definition.resource_loader_function.side_effect = Exception("Test exception")
+    mock_plugin_definition.context_loader_function.side_effect = Exception("Test exception")
 
     with pytest.raises(PluginDataLoadError):
         load_data("test_plugin", configuration_model, mock_plugin_definition)
