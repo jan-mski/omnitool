@@ -2,8 +2,8 @@ import json
 
 import pytest
 
-from omnitool.plugin.configuration import PluginConfiguration
-from omnitool.plugin.context import ResourceData
+from omnitool.plugin.loading.configuration import PluginConfiguration
+from omnitool.plugin.api.context import ResourceData
 
 
 @pytest.fixture
@@ -29,15 +29,11 @@ def configuration_json():
                 "resources": [
                     {
                         "name": "Resource 1",
-                        "location": {
-                            "path": "path/to/resource1"
-                        }
+                        "uri": "file:///path/to/resource1"
                     },
                     {
                         "name": "Resource 2",
-                        "location": {
-                            "path": "path/to/resource2"
-                        }
+                        "uri": "file:///path/to/resource2"
                     }
                 ]
             },
@@ -66,15 +62,11 @@ def configuration_model(configuration_json):
             "resources": [
                 {
                     "name": "Resource 1",
-                    "location": {
-                        "path": "path/to/resource1"
-                    }
+                    "uri": "file:///path/to/resource1"
                 },
                 {
                     "name": "Resource 2",
-                    "location": {
-                        "path": "path/to/resource2"
-                    }
+                    "uri": "file:///path/to/resource2"
                 }
             ]
         },

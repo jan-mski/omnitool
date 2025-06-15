@@ -1,11 +1,11 @@
 import logging
 from dataclasses import dataclass
 
-from omnitool.plugin import finder
-from omnitool.plugin.configuration import load_configuration, PluginConfiguration
-from omnitool.plugin.data import load_data, PluginData
-from omnitool.plugin.definition import PluginDefinition
-from omnitool.plugin.location import PluginLocation
+from omnitool.plugin.loading import finder
+from omnitool.plugin.loading.configuration import load_configuration, PluginConfiguration
+from omnitool.plugin.loading.data import load_data, PluginData
+from omnitool.plugin.api.definition import PluginDefinition
+from omnitool.plugin.loading.location import PluginLocation
 
 
 logger = logging.getLogger(__name__)
@@ -16,7 +16,6 @@ loaded_plugins: dict[str, "LoadedPlugin"] = {}
 @dataclass
 class LoadedPlugin:
     data: PluginData
-    configuration: PluginConfiguration
     definition: PluginDefinition
     location: PluginLocation
 
@@ -59,7 +58,7 @@ def _load_plugin(plugin_location: PluginLocation) -> LoadedPlugin:
     plugin_configuration: PluginConfiguration = load_configuration(plugin_location.plugin_name)
     plugin_data: PluginData = load_data(plugin_location.plugin_name, plugin_configuration, plugin_definition)
 
-    return LoadedPlugin(data=plugin_data, configuration=plugin_configuration, definition=plugin_definition, location=plugin_location)
+    return LoadedPlugin(data=plugin_data, definition=plugin_definition, location=plugin_location)
 
 
 def _load_definition(plugin_location: PluginLocation) -> PluginDefinition:

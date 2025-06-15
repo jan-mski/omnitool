@@ -1,8 +1,7 @@
-from abc import ABC
 from typing import Type, Protocol, Callable
 
-from omnitool.plugin.context import ResourceData, Context
-from omnitool.plugin.operation import PluginOperationGroup
+from omnitool.plugin.api.context import ResourceData, Context
+from omnitool.plugin.api.operation import PluginOperationGroup
 
 
 class ContextLoaderProtocol(Protocol):
@@ -19,7 +18,7 @@ class ContextLoaderProtocol(Protocol):
         ...
 
 
-class PluginDefinition(PluginOperationGroup, ABC):
+class PluginDefinition(PluginOperationGroup):
     """
     Abstract base class for all plugins.
     """

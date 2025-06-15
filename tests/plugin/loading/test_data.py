@@ -1,9 +1,11 @@
+from pathlib import Path
+from urllib.parse import urlparse
 import pytest
 
-from omnitool.plugin.configuration import PluginConfiguration
-from omnitool.plugin.data import PluginDataLoadError, load_data, PluginData, ContextData
-from omnitool.plugin.context import ResourceData, Context
-from omnitool.plugin.definition import PluginDefinition
+from omnitool.plugin.loading.configuration import PluginConfiguration
+from omnitool.plugin.loading.data import PluginDataLoadError, load_data, PluginData
+from omnitool.plugin.api.context import ResourceData, Context, Resource, Location
+from omnitool.plugin.api.definition import PluginDefinition
 
 
 @pytest.fixture
@@ -40,16 +42,39 @@ def plugin_definition(resource_data_type, context_loader_function) -> PluginDefi
     return plugin_definition
 
 
+@pytest.fixture
+def invalid_uri_configuration():
+    """
+    Provides a PluginConfiguration with invalid URI for testing error handling.
+    """
+    return PluginConfiguration(contexts=[
+        {
+            "name": "test_context",
+            "resources": [
+                {
+                    "name": "test_resource",
+                    "uri": "http://invalid-scheme/resource"
+                }
+            ]
+        }
+    ])
+
+
 def test_load_data_loads_resources(resource_data, configuration_model, plugin_definition):
     """
     Tests that load_data correctly loads resources for each context and returns the expected mapping.
     Expects the context loader function to be called for each context and the loaded resources to be returned.
     """
     expected_contexts = {
-        context_name: ContextData(
+        context_name: Context(
+            name=context_name,
             resources={
-                resource_name: resource_data
-                for resource_name in context_configuration.resources.keys()
+                resource_name: Resource(
+                    name=resource_name,
+                    location=Location(path=Path(urlparse(resource_configuration.uri).path)),
+                    data=resource_data
+                )
+                for resource_name, resource_configuration in context_configuration.resources.items()
             }
         )
         for context_name, context_configuration in configuration_model.contexts.items()
@@ -85,3 +110,12 @@ def test_load_data_handles_exceptions(mocker, configuration_model):
 
     with pytest.raises(PluginDataLoadError):
         load_data("test_plugin", configuration_model, mock_plugin_definition)
+
+
+def test_load_data_handles_invalid_uri(invalid_uri_configuration, plugin_definition):
+    """
+    Tests that load_data handles invalid URIs in resource configurations.
+    Expects a PluginDataLoadError to be raised when create_location fails due to invalid URI.
+    """
+    with pytest.raises(PluginDataLoadError, match="Could not load plugin data"):
+        load_data("test_plugin", invalid_uri_configuration, plugin_definition)

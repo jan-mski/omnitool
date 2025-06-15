@@ -1,24 +1,13 @@
 import logging
 from dataclasses import dataclass
 
-from omnitool.plugin.configuration import PluginConfiguration
-from omnitool.plugin.configuration import ContextConfiguration, ResourceConfiguration
-from omnitool.plugin.context import ResourceData, Context, Resource
-from omnitool.plugin.definition import PluginDefinition, ContextLoaderProtocol
+from omnitool.plugin.loading.configuration import PluginConfiguration
+from omnitool.plugin.loading.configuration import ContextConfiguration, ResourceConfiguration
+from omnitool.plugin.api.context import ResourceData, Context, Resource, parse_uri
+from omnitool.plugin.api.definition import PluginDefinition, ContextLoaderProtocol
 
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class ContextData:
-    """
-    Data class containing all the data for a context.
-
-    Attributes:
-        resources: A dictionary of resources, where the key is the name of the resource and the value is the resource.
-    """
-    resources: dict[str, ResourceData]
 
 
 @dataclass
@@ -29,7 +18,7 @@ class PluginData:
     Attributes:
         contexts: A dictionary of contexts, where the key is the name of the context and the value is the context.
     """
-    contexts: dict[str, ContextData]
+    contexts: dict[str, Context]
 
 
 class PluginDataLoadError(Exception):
@@ -59,7 +48,7 @@ def load_data(plugin_name: str,
         for context_name, context_configuration in plugin_configuration.contexts.items():
             logger.debug(f"Loading data for context '{context_name}'")
             context: Context = _load_context(plugin_definition.context_loader_function, context_configuration)
-            contexts[context_name] = ContextData(resources=_map_resources_to_resource_data(context.resources))
+            contexts[context_name] = context
     except Exception as e:
         raise PluginDataLoadError(str(e)) from e
 
@@ -77,10 +66,6 @@ def _load_context(context_loader_function: ContextLoaderProtocol,
     return context
 
 
-def _map_resources_to_resource_data(resources: dict[str, Resource]) -> dict[str, ResourceData]:
-    return {name: resource.data for name, resource in resources.items()}
-
-
 def _map_resource_configurations_to_resources(resources: dict[str, ResourceConfiguration]) -> dict[str, Resource]:
-    return {name: Resource(name=name, location=resource_configuration.location)
+    return {name: Resource(name=name, location=parse_uri(resource_configuration.uri))
             for name, resource_configuration in resources.items()}

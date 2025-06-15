@@ -2,7 +2,7 @@ import logging
 import sys
 
 from omnitool import settings
-from omnitool.plugin import loader
+from omnitool.plugin.loading import loader
 
 
 logger = logging.getLogger(__name__)

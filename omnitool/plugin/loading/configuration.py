@@ -5,7 +5,6 @@ from typing import Optional, Annotated
 from pydantic import BaseModel, Field, BeforeValidator, ConfigDict
 
 from omnitool import settings
-from omnitool.plugin.context import Location
 
 
 PLUGIN_CONFIGURATION_FILE_NAME = "configuration.json"
@@ -31,12 +30,12 @@ ResourcesDictType = Annotated[
 
 class ResourceConfiguration(BaseModel):
     """
-    Configuration for context resources, including a name and location.
+    Configuration for context resources, including a name and URI.
     """
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     name: str
-    location: Location
+    uri: str
 
 
 class ContextConfiguration(BaseModel):

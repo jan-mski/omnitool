@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Protocol, Any, Callable
 
-from omnitool.plugin.context import Context
+from omnitool.plugin.api.context import Context
 
 
 class OperationProtocol(Protocol):

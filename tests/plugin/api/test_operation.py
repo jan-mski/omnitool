@@ -1,6 +1,6 @@
 import pytest
 
-from omnitool.plugin.operation import PluginOperationGroup
+from omnitool.plugin.api.operation import PluginOperationGroup
 
 
 @pytest.fixture

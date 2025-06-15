@@ -2,10 +2,10 @@ from pathlib import Path
 
 import pytest
 
-import omnitool.plugin.configuration
-from omnitool.plugin.location import PluginModule, PluginLocation
-from omnitool.plugin.configuration import (PluginConfiguration, load_configuration, PluginConfigurationLoadError,
-                                           PLUGIN_CONFIGURATION_FILE_NAME)
+import omnitool.settings as settings
+from omnitool.plugin.loading.location import PluginModule, PluginLocation
+from omnitool.plugin.loading.configuration import (PluginConfiguration, load_configuration, PluginConfigurationLoadError,
+                                          PLUGIN_CONFIGURATION_FILE_NAME)
 
 
 @pytest.fixture
@@ -51,9 +51,10 @@ def create_configuration_file(configuration_json) -> callable:
             Path: Path to the created configuration file
         """
         configuration_file = plugin_configurations_dir / plugin_name / PLUGIN_CONFIGURATION_FILE_NAME
+        configuration_file.parent.mkdir(parents=True, exist_ok=True)
 
         if write:
-            configuration_file.write_text(configuration_json)
+            configuration_file.write_text(configuration_json, encoding="utf-8")
 
         return configuration_file
 
@@ -77,8 +78,7 @@ def mock_plugin_configurations(mocker, tmp_path) -> callable:
 
         plugin_configurations_dir = tmp_path / "plugins"
         plugin_configurations_dir.mkdir(parents=True, exist_ok=True)
-        mocker.patch.object(omnitool.plugin.configuration.settings, "PLUGIN_CONFIGURATIONS_PATH",
-                            plugin_configurations_dir)
+        mocker.patch.object(settings, "PLUGIN_CONFIGURATIONS_PATH", plugin_configurations_dir)
 
         if create_dirs:
             for plugin_name in plugin_names:

@@ -1,6 +1,7 @@
 import pytest
-from omnitool.plugin.location import PluginModule
-from omnitool.plugin.definition import PluginDefinition
+from omnitool.plugin.loading.location import PluginModule
+from omnitool.plugin.api.definition import PluginDefinition
+from omnitool.plugin.loading.location import PluginLocation
 
 
 def test_plugin_module_cannot_be_instantiated_directly():
@@ -94,22 +95,13 @@ def test_plugin_module_requires_load_implementation():
         PluginModuleNoLoad()
 
 
-def test_plugin_location_initialization():
+@pytest.fixture
+def plugin_location(mocker) -> PluginLocation:
     """
-    Tests that a PluginLocation can be initialized with a PluginModule.
-    Expects the object to be created successfully with the provided module.
-    """
+    Creates a test PluginLocation with a mock plugin module.
 
-
-def test_plugin_location_plugin_name_property():
+    Returns:
+        PluginLocation: A plugin location for testing
     """
-    Tests that the plugin_name property returns the name from the plugin module.
-    Expects the property to delegate to the plugin module's name property.
-    """
-
-
-def test_plugin_location_load_module_method():
-    """
-    Tests that the load_module method loads and returns a PluginDefinition.
-    Expects the method to delegate to the plugin module's load method.
-    """
+    mock_module = mocker.MagicMock()
+    return PluginLocation(plugin_module=mock_module)

@@ -1,7 +1,7 @@
 import pytest
 
-from omnitool.plugin.context import ResourceData
-from omnitool.plugin.definition import PluginDefinition
+from omnitool.plugin.api.context import ResourceData
+from omnitool.plugin.api.definition import PluginDefinition
 
 
 @pytest.fixture
