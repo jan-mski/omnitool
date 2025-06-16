@@ -3,7 +3,7 @@ from importlib.metadata import EntryPoint, EntryPoints
 import pytest
 
 import omnitool.plugin.loading.finder as finder
-from omnitool.plugin.loading.location import PluginModule, PluginLocation
+from omnitool.plugin.loading.location import PluginModule
 from omnitool.plugin.loading.finder import PluginEntryPoint, find_plugins
 from omnitool.plugin.api.definition import PluginDefinition
 
@@ -112,9 +112,9 @@ def test_plugin_entry_point_load(mocker, resource_data_type):
 
 def test_find_plugins_combines_builtin_and_user(mock_settings, mock_entry_points):
     """
-    Tests that find_plugins returns a combined list of PluginLocation objects for both builtin and user plugins
+    Tests that find_plugins returns a combined list of PluginModule objects for both builtin and user plugins
     as configured in settings.
-    Expects the returned list to include properly created PluginLocation objects.
+    Expects the returned list to include properly created PluginModule objects.
     """
     builtin_plugin_name = "builtin_plugin"
     user_plugin_name = "user_plugin"
@@ -122,16 +122,14 @@ def test_find_plugins_combines_builtin_and_user(mock_settings, mock_entry_points
     mock_settings([builtin_plugin_name], [user_plugin_name])
     plugin_entry_points = mock_entry_points([builtin_plugin_name, user_plugin_name])
 
-    expected_plugin_locations = [
-        PluginLocation(
-            plugin_module=PluginEntryPoint(plugin_entry_points[builtin_plugin_name])),
-        PluginLocation(
-            plugin_module=PluginEntryPoint(plugin_entry_points[user_plugin_name])),
+    expected_plugin_modules = [
+        PluginEntryPoint(plugin_entry_points[builtin_plugin_name]),
+        PluginEntryPoint(plugin_entry_points[user_plugin_name]),
     ]
 
-    actual_plugin_locations = find_plugins()
+    actual_plugin_modules = find_plugins()
 
-    assert actual_plugin_locations == expected_plugin_locations
+    assert actual_plugin_modules == expected_plugin_modules
 
 
 def test_find_plugins_skips_missing_plugins(mock_settings, mock_entry_points):
@@ -144,13 +142,13 @@ def test_find_plugins_skips_missing_plugins(mock_settings, mock_entry_points):
     mock_settings([existing_plugin_name, "missing_plugin"], [])
     plugin_entry_points = mock_entry_points([existing_plugin_name])
 
-    expected_plugin_locations = [
-        PluginLocation(plugin_module=PluginEntryPoint(plugin_entry_points[existing_plugin_name]))
+    expected_plugin_modules = [
+        PluginEntryPoint(plugin_entry_points[existing_plugin_name])
     ]
 
-    actual_plugin_locations = find_plugins()
+    actual_plugin_modules = find_plugins()
 
-    assert actual_plugin_locations == expected_plugin_locations
+    assert actual_plugin_modules == expected_plugin_modules
 
 
 def test_find_plugins_handles_duplicate_plugin_name(mock_settings,
@@ -167,12 +165,11 @@ def test_find_plugins_handles_duplicate_plugin_name(mock_settings,
     second_entry_point = mock_entry_point(duplicate_plugin_name)
     mock_entry_points_function([first_entry_point, second_entry_point])
 
-    expected_plugin_locations = [
-        PluginLocation(
-            plugin_module=PluginEntryPoint(first_entry_point)),
+    expected_plugin_modules = [
+        PluginEntryPoint(first_entry_point),
     ]
 
-    actual_plugin_locations = find_plugins()
+    actual_plugin_modules = find_plugins()
 
-    assert len(actual_plugin_locations) == 1
-    assert actual_plugin_locations == expected_plugin_locations
+    assert len(actual_plugin_modules) == 1
+    assert actual_plugin_modules == expected_plugin_modules

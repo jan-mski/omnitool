@@ -5,7 +5,7 @@ from omnitool.plugin.loading import finder
 from omnitool.plugin.loading.configuration import load_configuration, PluginConfiguration
 from omnitool.plugin.loading.data import load_data, PluginData
 from omnitool.plugin.api.definition import PluginDefinition
-from omnitool.plugin.loading.location import PluginLocation
+from omnitool.plugin.loading.location import PluginModule
 
 
 logger = logging.getLogger(__name__)
@@ -20,11 +20,11 @@ class LoadedPlugin:
     """
     data: PluginData
     definition: PluginDefinition
-    location: PluginLocation
+    module: PluginModule
 
     @property
     def name(self) -> str:
-        return self.location.plugin_name
+        return self.module.name
 
 
 def load_plugins() -> None:
@@ -34,38 +34,38 @@ def load_plugins() -> None:
     global loaded_plugins
     loaded_plugins = {}
 
-    plugin_locations: list[PluginLocation] = finder.find_plugins()
+    plugin_modules: list[PluginModule] = finder.find_plugins()
 
-    if not plugin_locations:
+    if not plugin_modules:
         logger.debug("No plugins available to load")
         return
 
     logger.debug("Loading plugins...")
 
-    for plugin_location in plugin_locations:
+    for plugin_module in plugin_modules:
         try:
-            loaded_plugin: LoadedPlugin = _load_plugin(plugin_location)
+            loaded_plugin: LoadedPlugin = _load_plugin(plugin_module)
 
             if loaded_plugin:
                 loaded_plugins[loaded_plugin.name] = loaded_plugin
-                logger.debug(f"LoadedPlugin '{loaded_plugin.name}' loaded from '{plugin_location.plugin_module.source}'")
+                logger.debug(f"LoadedPlugin '{loaded_plugin.name}' loaded from '{plugin_module.source}'")
         except Exception as e:
-            logger.debug(f"Failed to load plugin '{plugin_location.plugin_name}' "
-                         f"from {plugin_location.plugin_module.source}", exc_info=e)
+            logger.debug(f"Failed to load plugin '{plugin_module.name}' "
+                         f"from {plugin_module.source}", exc_info=e)
 
     logger.debug(f"Plugins loaded: {list(loaded_plugins.keys())}")
 
 
-def _load_plugin(plugin_location: PluginLocation) -> LoadedPlugin:
-    plugin_definition: PluginDefinition = _load_definition(plugin_location)
-    plugin_configuration: PluginConfiguration = load_configuration(plugin_location.plugin_name)
-    plugin_data: PluginData = load_data(plugin_location.plugin_name, plugin_configuration, plugin_definition)
+def _load_plugin(plugin_module: PluginModule) -> LoadedPlugin:
+    plugin_definition: PluginDefinition = _load_definition(plugin_module)
+    plugin_configuration: PluginConfiguration = load_configuration(plugin_module.name)
+    plugin_data: PluginData = load_data(plugin_module.name, plugin_configuration, plugin_definition)
 
-    return LoadedPlugin(data=plugin_data, definition=plugin_definition, location=plugin_location)
+    return LoadedPlugin(data=plugin_data, definition=plugin_definition, module=plugin_module)
 
 
-def _load_definition(plugin_location: PluginLocation) -> PluginDefinition:
-    plugin_definition: PluginDefinition = plugin_location.load_module()
+def _load_definition(plugin_module: PluginModule) -> PluginDefinition:
+    plugin_definition: PluginDefinition = plugin_module.load()
     _validate_definition(plugin_definition)
 
     return plugin_definition

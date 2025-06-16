@@ -1,7 +1,6 @@
 import pytest
 from omnitool.plugin.loading.location import PluginModule
 from omnitool.plugin.api.definition import PluginDefinition
-from omnitool.plugin.loading.location import PluginLocation
 
 
 def test_plugin_module_cannot_be_instantiated_directly():

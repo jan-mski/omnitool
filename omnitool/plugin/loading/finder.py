@@ -4,7 +4,7 @@ from importlib.metadata import EntryPoint, entry_points
 
 from omnitool import settings
 from omnitool.plugin.api.definition import PluginDefinition
-from omnitool.plugin.loading.location import PluginModule, PluginLocation
+from omnitool.plugin.loading.location import PluginModule
 
 
 PLUGIN_ENTRY_POINT_GROUP = "omnitool.plugin"
@@ -30,7 +30,7 @@ class PluginEntryPoint(PluginModule):
     def load(self) -> PluginDefinition:
         return self.entry_point.load()
 
-def find_plugins() -> list[PluginLocation]:
+def find_plugins() -> list[PluginModule]:
     """
     Finds all available plugins.
     """
@@ -38,14 +38,13 @@ def find_plugins() -> list[PluginLocation]:
 
     plugin_modules = _find_plugin_modules()
     installed_plugins = _find_installed_plugins(plugin_modules)
-    plugin_locations = _create_plugin_locations(installed_plugins)
 
-    if plugin_locations:
-        logger.debug(f"Plugins found: {[location.plugin_name for location in plugin_locations]}")
+    if installed_plugins:
+        logger.debug(f"Plugins found: {list(installed_plugins.keys())}")
     else:
         logger.debug("No plugins found")
 
-    return plugin_locations
+    return list(installed_plugins.values())
 
 
 def _find_plugin_modules() -> list[PluginModule]:
@@ -83,8 +82,3 @@ def _find_installed_plugins(plugin_modules: list[PluginModule]) -> dict[str, Plu
     return installed_plugins
 
 
-def _create_plugin_locations(installed_plugins: dict[str, PluginModule]) -> list[PluginLocation]:
-    return [
-        PluginLocation(plugin_module=plugin_module)
-        for plugin_name, plugin_module in installed_plugins.items()
-    ]
