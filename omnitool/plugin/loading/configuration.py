@@ -30,7 +30,7 @@ ResourcesDictType = Annotated[
 
 class ResourceConfiguration(BaseModel):
     """
-    Configuration for context resources, including a name and URI.
+    Configuration of context resources.
     """
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -40,7 +40,7 @@ class ResourceConfiguration(BaseModel):
 
 class ContextConfiguration(BaseModel):
     """
-    Configuration for a plugin context, including a name and resources.
+    Configuration of a plugin context.
     """
     name: str
     resources: Optional[ResourcesDictType] = Field(default_factory=dict)
@@ -48,7 +48,7 @@ class ContextConfiguration(BaseModel):
 
 class PluginConfiguration(BaseModel):
     """
-    Configuration for a plugin, including contexts and their resources.
+    Configuration of a plugin.
     """
     contexts: Optional[ContextsDictType] = Field(default_factory=dict)
 

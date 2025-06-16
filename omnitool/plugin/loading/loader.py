@@ -15,6 +15,9 @@ loaded_plugins: dict[str, "LoadedPlugin"] = {}
 
 @dataclass
 class LoadedPlugin:
+    """
+    Represents a loaded plugin.
+    """
     data: PluginData
     definition: PluginDefinition
     location: PluginLocation

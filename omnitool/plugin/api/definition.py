@@ -9,7 +9,7 @@ class ContextLoaderProtocol(Protocol):
         """
         Protocol for context loader functions that can be registered with the context_loader decorator.
 
-        Context loader functions must accept a list of resources as keyword-only arguments.
+        Context loader functions must accept a context as keyword-only arguments.
         They should load the resources and update the resource objects with the loaded data.
 
         Args:
@@ -20,7 +20,7 @@ class ContextLoaderProtocol(Protocol):
 
 class PluginDefinition(PluginOperationGroup):
     """
-    Abstract base class for all plugins.
+    Base class for all plugin definitions.
     """
 
     resource_data_type: Type[ResourceData]

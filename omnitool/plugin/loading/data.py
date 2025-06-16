@@ -47,8 +47,7 @@ def load_data(plugin_name: str,
     try:
         for context_name, context_configuration in plugin_configuration.contexts.items():
             logger.debug(f"Loading data for context '{context_name}'")
-            context: Context = _load_context(plugin_definition.context_loader_function, context_configuration)
-            contexts[context_name] = context
+            contexts[context_name] = _load_context(plugin_definition.context_loader_function, context_configuration)
     except Exception as e:
         raise PluginDataLoadError(str(e)) from e
 

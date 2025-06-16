@@ -93,15 +93,3 @@ def test_plugin_module_requires_load_implementation():
 
     with pytest.raises(TypeError):
         PluginModuleNoLoad()
-
-
-@pytest.fixture
-def plugin_location(mocker) -> PluginLocation:
-    """
-    Creates a test PluginLocation with a mock plugin module.
-
-    Returns:
-        PluginLocation: A plugin location for testing
-    """
-    mock_module = mocker.MagicMock()
-    return PluginLocation(plugin_module=mock_module)

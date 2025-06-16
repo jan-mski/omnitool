@@ -7,10 +7,11 @@ from omnitool.plugin.api.context import Context
 class OperationProtocol(Protocol):
     def __call__(self, *args: Any, context: Context, **kwargs: Any) -> Any:
         """
-        Protocol for plugin operation functions that can be registered with the operation decorator.
+        Protocol for plugin operation functions that can be registered in operation groups.
 
         Operation functions must accept a context as keyword-only argument, along with any other positional
         and keyword arguments.
+        The context will contain only the resources that are selected for the operation.
 
         Args:
             *args: Variable positional arguments passed to the operation

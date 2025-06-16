@@ -4,6 +4,10 @@ from omnitool.main import main
 
 
 def test_main(mocker):
+    """
+    Tests the main function of the omnitool package.
+    Expects the settings and plugins to be loaded correctly.
+    """
     mock_load_settings = mocker.patch.object(settings, "load_settings")
     mock_load_plugins = mocker.patch.object(loader, "load_plugins")
     main([])

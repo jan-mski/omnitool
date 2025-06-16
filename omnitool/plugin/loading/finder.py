@@ -14,6 +14,9 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class PluginEntryPoint(PluginModule):
+    """
+    Represents a plugin entry point.
+    """
     entry_point: EntryPoint
 
     @property
@@ -28,6 +31,9 @@ class PluginEntryPoint(PluginModule):
         return self.entry_point.load()
 
 def find_plugins() -> list[PluginLocation]:
+    """
+    Finds all available plugins.
+    """
     logger.debug("Searching for plugins...")
 
     plugin_modules = _find_plugin_modules()
