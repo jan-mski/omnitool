@@ -3,7 +3,8 @@ from dataclasses import dataclass
 from importlib.metadata import EntryPoint, entry_points
 
 from omnitool import settings
-from omnitool.plugin.base import PluginLocation, PluginModule, PluginDefinition
+from omnitool.plugin.api.definition import PluginDefinition
+from omnitool.plugin.loading.location import PluginModule, PluginLocation
 
 
 PLUGIN_ENTRY_POINT_GROUP = "omnitool.plugin"
@@ -13,6 +14,9 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class PluginEntryPoint(PluginModule):
+    """
+    Represents a plugin entry point.
+    """
     entry_point: EntryPoint
 
     @property
@@ -24,11 +28,12 @@ class PluginEntryPoint(PluginModule):
         return self.entry_point.name
 
     def load(self) -> PluginDefinition:
-        super().load()
         return self.entry_point.load()
 
-
 def find_plugins() -> list[PluginLocation]:
+    """
+    Finds all available plugins.
+    """
     logger.debug("Searching for plugins...")
 
     plugin_modules = _find_plugin_modules()

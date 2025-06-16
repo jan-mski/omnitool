@@ -2,39 +2,10 @@ from pathlib import Path
 
 import pytest
 
-import omnitool.plugin.configuration
-from omnitool.plugin.base import PluginLocation, PluginModule
-from omnitool.plugin.configuration import (PluginConfiguration, load_configuration, PluginConfigurationLoadError,
-                                           PLUGIN_CONFIGURATION_FILE_NAME)
-
-
-@pytest.fixture
-def mock_plugin_module(mocker) -> PluginModule:
-    """
-    Creates a mock PluginModule for testing.
-
-    Returns:
-        Mock: A mock PluginModule with a name property
-    """
-    mock_module = mocker.Mock(spec=PluginModule)
-    mock_module.name = "test_plugin"
-
-    return mock_module
-
-
-@pytest.fixture
-def plugin_location(mock_plugin_module) -> PluginLocation:
-    """
-    Creates a PluginLocation for testing.
-
-    Args:
-        mock_plugin_module: A mock PluginModule
-
-    Returns:
-        PluginLocation: A PluginLocation with the mock PluginModule
-    """
-    return PluginLocation(plugin_module=mock_plugin_module)
-
+import omnitool.settings as settings
+from omnitool.plugin.loading.configuration import (PluginConfiguration, load_configuration,
+                                                   PluginConfigurationLoadError,
+                                                   PLUGIN_CONFIGURATION_FILE_NAME)
 
 @pytest.fixture
 def create_configuration_file(configuration_json) -> callable:
@@ -51,9 +22,10 @@ def create_configuration_file(configuration_json) -> callable:
             Path: Path to the created configuration file
         """
         configuration_file = plugin_configurations_dir / plugin_name / PLUGIN_CONFIGURATION_FILE_NAME
+        configuration_file.parent.mkdir(parents=True, exist_ok=True)
 
         if write:
-            configuration_file.write_text(configuration_json)
+            configuration_file.write_text(configuration_json, encoding="utf-8")
 
         return configuration_file
 
@@ -77,8 +49,7 @@ def mock_plugin_configurations(mocker, tmp_path) -> callable:
 
         plugin_configurations_dir = tmp_path / "plugins"
         plugin_configurations_dir.mkdir(parents=True, exist_ok=True)
-        mocker.patch.object(omnitool.plugin.configuration.settings, "PLUGIN_CONFIGURATIONS_PATH",
-                            plugin_configurations_dir)
+        mocker.patch.object(settings, "PLUGIN_CONFIGURATIONS_PATH", plugin_configurations_dir)
 
         if create_dirs:
             for plugin_name in plugin_names:
@@ -100,17 +71,18 @@ def test_plugin_configuration_empty():
     assert empty_configuration.contexts == {}
 
 
-def test_plugin_configuration_resources(configuration_json, configuration_model):
+def test_plugin_configuration_resources(configuration_json, create_configuration_model):
     """
     Tests that a PluginConfiguration correctly loads resource data from JSON.
     Expects the model dump to match the expected paths structure.
     """
     actual_configuration = PluginConfiguration.model_validate_json(configuration_json)
+    configuration_model = create_configuration_model()
 
     assert actual_configuration == configuration_model
 
 
-def test_load_configuration(create_configuration_file, configuration_model, mock_plugin_configurations):
+def test_load_configuration(create_configuration_file, create_configuration_model, mock_plugin_configurations):
     """
     Tests that configuration loading works correctly.
     Expects the loaded configuration to match the expected model.
@@ -121,6 +93,7 @@ def test_load_configuration(create_configuration_file, configuration_model, mock
     create_configuration_file(plugin_configurations_dir, plugin_name)
 
     loaded_configuration = load_configuration(plugin_name)
+    configuration_model = create_configuration_model()
 
     assert loaded_configuration == configuration_model
 

@@ -1,11 +1,11 @@
-from importlib.metadata import EntryPoint
+from importlib.metadata import EntryPoint, EntryPoints
 
 import pytest
 
-import omnitool.plugin
-from omnitool.plugin.base import PluginModule, PluginLocation
-from omnitool.plugin.finder import PluginEntryPoint, find_plugins
-from omnitool_plugin_base.plugin.base import PluginDefinition
+import omnitool.plugin.loading.finder as finder
+from omnitool.plugin.loading.location import PluginModule, PluginLocation
+from omnitool.plugin.loading.finder import PluginEntryPoint, find_plugins
+from omnitool.plugin.api.definition import PluginDefinition
 
 
 @pytest.fixture
@@ -21,7 +21,7 @@ def mock_settings(mocker):
         Returns:
             None
         """
-        settings_mock = mocker.patch.object(omnitool.plugin.finder, "settings")
+        settings_mock = mocker.patch.object(finder, "settings")
         settings_mock.omnitool_settings.enabled_builtin_plugins = enabled_builtin_plugins or []
         settings_mock.omnitool_settings.enabled_user_plugins = enabled_user_plugins or []
 
@@ -51,8 +51,8 @@ def mock_entry_point(mocker):
 @pytest.fixture
 def mock_entry_points_function(mocker, mock_entry_point):
     def _mock_entry_points_function(plugin_entry_points: list[EntryPoint]) -> None:
-        entry_points_mock = mocker.patch.object(omnitool.plugin.finder, "entry_points")
-        entry_points_mock.return_value = list(plugin_entry_points)
+        entry_points_mock = mocker.patch.object(finder, "entry_points")
+        entry_points_mock.return_value = EntryPoints(plugin_entry_points)
 
     return _mock_entry_points_function
 
@@ -93,22 +93,20 @@ def test_plugin_entry_point_name_property(mocker):
     assert plugin_entry_point.name == "test_plugin"
 
 
-def test_plugin_entry_point_load(mocker, context_resource_type):
+def test_plugin_entry_point_load(mocker, resource_data_type):
     """
     Tests that the public load method performs its functionality including calling the underlying load.
     Expects both superclass load and entry_point.load to be executed.
     """
     entry_point = mocker.Mock()
-    plugin_definition = PluginDefinition(root_operation_name="test_plugin", resource_type=context_resource_type)
+    plugin_definition = PluginDefinition(root_operation_name="test_plugin", resource_data_type=resource_data_type)
     entry_point.load.return_value = plugin_definition
     plugin_entry_point = PluginEntryPoint(entry_point=entry_point)
-    super_load_mock = mocker.patch.object(PluginModule, "load")
 
     loaded_plugin_definition = plugin_entry_point.load()
 
     assert loaded_plugin_definition == plugin_definition
 
-    super_load_mock.assert_called_once()
     entry_point.load.assert_called_once()
 
 
