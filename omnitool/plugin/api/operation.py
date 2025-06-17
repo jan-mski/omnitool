@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import functools
 from typing import Protocol, Any, Callable
 
 from omnitool.plugin.api.context import Context
@@ -66,7 +67,8 @@ class PluginOperationGroup:
             The registered function, unchanged, or a decorator function if called with parentheses
         """
 
-        def decorator(f: OperationProtocol) -> OperationProtocol:
+        @functools.wraps(func)
+        def wrapper(f: OperationProtocol) -> OperationProtocol:
             if f is None:
                 raise ValueError("Function cannot be None")
 
@@ -75,6 +77,6 @@ class PluginOperationGroup:
             return f
 
         if func is not None:
-            return decorator(func)
+            return wrapper(func)
 
-        return decorator
+        return wrapper
