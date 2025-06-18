@@ -76,62 +76,6 @@ def plugin_data_mock(mocker) -> PluginData:
     return mocker.MagicMock(spec=PluginData)
 
 
-@pytest.fixture
-def mock_plugin_module(mocker) -> callable:
-    def _mock_plugin_module(plugin_name: str, plugin_definition: PluginDefinition) -> mocker.MagicMock:
-        """
-        Creates a mock PluginModule object for testing.
-
-        Args:
-            plugin_name: The name of the plugin.
-            plugin_definition: The plugin definition object.
-
-        Returns:
-            MagicMock: A mocked PluginModule object.
-        """
-        module_mock = mocker.MagicMock(spec=PluginModule)
-        module_mock.source = "plugin_source"
-        module_mock.root_operation_name = plugin_name
-        module_mock.name = plugin_name
-        module_mock.load.return_value = plugin_definition
-
-        return module_mock
-
-    return _mock_plugin_module
-
-
-@pytest.fixture
-def create_loaded_plugin(mocker, mock_plugin_module, create_plugin_definition) -> callable:
-    def _create_loaded_plugin(plugin_name: str, plugin_definition: PluginDefinition = None) -> LoadedPlugin:
-        """
-        Creates a LoadedPlugin object with mocked components for testing.
-
-        Args:
-            plugin_name: The name of the plugin.
-            plugin_definition: Optional PluginDefinition object. If not provided, one will be created.
-
-        Returns:
-            LoadedPlugin: A LoadedPlugin object with mocked module and contexts.
-        """
-        if plugin_definition is None:
-            plugin_definition = create_plugin_definition(plugin_name)
-
-        module_mock = mock_plugin_module(
-            plugin_name=plugin_name,
-            plugin_definition=plugin_definition
-        )
-
-        plugin_data = mocker.MagicMock(spec=PluginData)
-
-        return LoadedPlugin(
-            data=plugin_data,
-            definition=plugin_definition,
-            module=module_mock
-        )
-
-    return _create_loaded_plugin
-
-
 def test_loaded_plugin(create_plugin_definition, mock_plugin_module, plugin_data_mock):
     """
     Tests that the plugin's name property correctly returns the name from the plugin definition.
