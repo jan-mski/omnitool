@@ -10,15 +10,15 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(
     level=logging.INFO,
     format="[%(asctime)s] [%(levelname)s] %(message)s",
-    handlers=[
-        logging.StreamHandler(stream=sys.stdout)
-    ]
+    handlers=[logging.StreamHandler(stream=sys.stdout)],
 )
+
 
 def initialize_app():
     settings.load_settings()
     loader.load_plugins()
     cli.initialize_operations()
+
 
 # Init app here for CLI completion to work
 initialize_app()

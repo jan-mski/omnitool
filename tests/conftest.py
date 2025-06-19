@@ -1,4 +1,5 @@
 import json
+from typing import Optional
 
 import pytest
 
@@ -15,6 +16,7 @@ def resource_data_type():
     """
     Provides a ResourceData type for testing purposes.
     """
+
     class ResourceDataStub(ResourceData):
         pass
 
@@ -29,27 +31,20 @@ def configuration_json():
     Returns:
         str: A JSON string representing plugin configuration with contexts and resources
     """
-    return json.dumps({
-        "contexts": [
-            {
-                "name": "Context 1",
-                "resources": [
-                    {
-                        "name": "Resource 1",
-                        "uri": "file:///path/to/resource1"
-                    },
-                    {
-                        "name": "Resource 2",
-                        "uri": "file:///path/to/resource2"
-                    }
-                ]
-            },
-            {
-                "name": "Context 2",
-                "resources": {}
-            }
-        ]
-    })
+    return json.dumps(
+        {
+            "contexts": [
+                {
+                    "name": "Context 1",
+                    "resources": [
+                        {"name": "Resource 1", "uri": "file:///path/to/resource1"},
+                        {"name": "Resource 2", "uri": "file:///path/to/resource2"},
+                    ],
+                },
+                {"name": "Context 2", "resources": {}},
+            ]
+        }
+    )
 
 
 @pytest.fixture
@@ -60,27 +55,21 @@ def create_configuration_model():
     Returns:
         callable: A factory function that creates PluginConfiguration instances with populated resource data
     """
+
     def _create_configuration_model():
-        return PluginConfiguration(contexts=[
-            {
-                "name": "Context 1",
-                "resources": [
-                    {
-                        "name": "Resource 1",
-                        "uri": "file:///path/to/resource1"
-                    },
-                    {
-                        "name": "Resource 2",
-                        "uri": "file:///path/to/resource2"
-                    }
-                ]
-            },
-            {
-                "name": "Context 2",
-                "resources": {}
-            }
-        ])
-    
+        return PluginConfiguration(
+            contexts=[
+                {
+                    "name": "Context 1",
+                    "resources": [
+                        {"name": "Resource 1", "uri": "file:///path/to/resource1"},
+                        {"name": "Resource 2", "uri": "file:///path/to/resource2"},
+                    ],
+                },
+                {"name": "Context 2", "resources": {}},
+            ]
+        )
+
     return _create_configuration_model
 
 
@@ -97,6 +86,7 @@ def context_loader_function(resource_data) -> callable:
     """
     Provides a mock context loader function that initializes resources with the given resource data type.
     """
+
     def _context_loader_function(context: Context) -> None:
         """
         Mock context loader function that initializes resources with the specified resource data type.
@@ -115,6 +105,7 @@ def create_plugin_definition(resource_data_type, context_loader_function) -> cal
     Returns:
         callable: A factory function that creates PluginDefinition instances with the given resource data type and context loader function.
     """
+
     def _create_plugin_definition(plugin_name: str) -> PluginDefinition:
         """
         Creates a PluginDefinition object for testing.
@@ -161,32 +152,39 @@ def mock_plugin_operation():
     """
     Factory fixture for creating mock plugin operations.
     """
+
     def _mock_plugin_operation(operation_names: list[str]) -> list:
         """
         Creates mock operations for the given operation names.
-        
+
         Args:
             operation_names: List of operation names to create mock operations for.
-            
+
         Returns:
             list: List of mock operation functions.
         """
         operations = []
         for operation_name in operation_names:
+
             def operation_stub(context: Context):
                 pass
-            
+
             operation_stub.__name__ = operation_name
             operations.append(operation_stub)
 
         return operations
-    
+
     return _mock_plugin_operation
 
 
 @pytest.fixture
 def create_loaded_plugin(mocker, mock_plugin_module, create_plugin_definition, mock_plugin_operation) -> callable:
-    def _create_loaded_plugin(plugin_name: str, plugin_definition: PluginDefinition = None, operation_names: list[str] = None) -> LoadedPlugin:
+    def _create_loaded_plugin(
+        plugin_name: str,
+        plugin_definition: Optional[PluginDefinition] = None,
+        operation_names: Optional[list[str]] = None,
+        contexts: Optional[dict] = None,
+    ) -> LoadedPlugin:
         """
         Creates a LoadedPlugin object with mocked components for testing.
 
@@ -194,6 +192,7 @@ def create_loaded_plugin(mocker, mock_plugin_module, create_plugin_definition, m
             plugin_name: The name of the plugin.
             plugin_definition: Optional PluginDefinition object. If not provided, one will be created.
             operation_names: Optional list of operation names to create mock operations for.
+            contexts: Optional dict of contexts to add to the plugin data. If not provided, no contexts will be set.
 
         Returns:
             LoadedPlugin: A LoadedPlugin object with mocked module and contexts.
@@ -205,17 +204,10 @@ def create_loaded_plugin(mocker, mock_plugin_module, create_plugin_definition, m
             operations = mock_plugin_operation(operation_names)
             plugin_definition.operations.extend(operations)
 
-        module_mock = mock_plugin_module(
-            plugin_name=plugin_name,
-            plugin_definition=plugin_definition
-        )
+        module_mock = mock_plugin_module(plugin_name=plugin_name, plugin_definition=plugin_definition)
 
-        plugin_data = mocker.MagicMock(spec=PluginData)
+        plugin_data = PluginData(contexts or {})
 
-        return LoadedPlugin(
-            data=plugin_data,
-            definition=plugin_definition,
-            module=module_mock
-        )
+        return LoadedPlugin(data=plugin_data, definition=plugin_definition, module=module_mock)
 
     return _create_loaded_plugin
