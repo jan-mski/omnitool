@@ -94,6 +94,9 @@ def _select_resources(selected_context: Context, resource_names: Optional[List[s
     else:
         resource_names = questionary.checkbox("Select resources:", choices=available_resources).ask()
 
+    if not resource_names:
+        raise click.ClickException("No resources selected")
+
     return {name: selected_context.resources[name] for name in resource_names}
 
 

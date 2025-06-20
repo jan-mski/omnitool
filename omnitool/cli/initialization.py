@@ -15,12 +15,13 @@ def callback():
     pass  # stop Typer from setting a default command
 
 
-def initialize_operations():
+def initialize_operations() -> None:
     """
     Initializes CLI operations for all loaded plugins.
     Creates a Typer subcommand for each plugin, and decorates operations.
     """
     for plugin in loader.loaded_plugins.values():
+        logger.debug(f"Initializing operations for plugin '{plugin.name}'")
         try:
             plugin_app = _create_plugin_app(plugin)
             _initialize_plugin_operations(plugin, plugin_app)

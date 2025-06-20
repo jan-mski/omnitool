@@ -317,3 +317,23 @@ def test_cli_operation_executes_with_interactive_resource_selection(
     assert result["context_name"] == "test_context"
     assert_resource_selection_calls(questionary_mock, 1)
     assert_context_selection_calls(questionary_mock, 0)
+
+
+def test_cli_operation_raises_error_when_no_resources_selected_interactively(
+    mock_resource_selection, create_loaded_plugin, sample_context, empty_context, sample_operation
+):
+    """
+    Tests that an exception is raised when the user selects no resources during interactive selection.
+    Expects the decorator to raise an exception with message indicating that no resources were selected.
+    """
+    questionary_mock = mock_resource_selection([])
+
+    contexts = {"test_context": sample_context, "empty_context": empty_context}
+    loaded_plugin_with_contexts = create_loaded_plugin("test_plugin", contexts=contexts)
+    wrapped_operation = cli_operation(loaded_plugin_with_contexts, sample_operation)
+
+    with pytest.raises(click.ClickException, match="No resources selected"):
+        wrapped_operation(context_name="test_context", resource_names=None)
+
+    assert_resource_selection_calls(questionary_mock, 1)
+    assert_context_selection_calls(questionary_mock, 0)
