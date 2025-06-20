@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Protocol, Any, Callable
+from typing import Optional, Protocol, Any, Callable
 
 from omnitool.plugin.api.context import Context
 
@@ -29,6 +29,7 @@ class PluginOperationGroup:
     """
     Registry for plugin operations.
     """
+
     root_operation_name: str
     subgroups: list["PluginOperationGroup"]
     operations: list[OperationProtocol]
@@ -50,8 +51,9 @@ class PluginOperationGroup:
 
         self.subgroups.append(subgroup)
 
-    def operation(self, func: OperationProtocol = None) -> (
-            OperationProtocol | Callable[[OperationProtocol], OperationProtocol]):
+    def operation(
+        self, operation: Optional[OperationProtocol] = None
+    ) -> OperationProtocol | Callable[[OperationProtocol], OperationProtocol]:
         """
         Decorator to register a method as a resource operation.
 
@@ -60,21 +62,21 @@ class PluginOperationGroup:
             - @definition.operation()
 
         Args:
-            func: The function to register, or None if called with parentheses
+            operation: The function to register, or None if called with parentheses
 
         Returns:
             The registered function, unchanged, or a decorator function if called with parentheses
         """
 
-        def decorator(f: OperationProtocol) -> OperationProtocol:
-            if f is None:
+        def wrapper(op: OperationProtocol):
+            if op is None:
                 raise ValueError("Function cannot be None")
 
-            self.operations.append(f)
+            self.operations.append(op)
 
-            return f
+            return op
 
-        if func is not None:
-            return decorator(func)
+        if operation is not None:
+            return wrapper(operation)
 
-        return decorator
+        return wrapper

@@ -17,7 +17,7 @@ def test_plugin_definition(create_plugin_definition, resource_data_type):
     assert plugin_definition.resource_data_type == resource_data_type
 
 
-def test_plugin_definition_add_resource_operation(create_plugin_definition):
+def test_plugin_definition_add_operation(create_plugin_definition):
     """
     Tests the addition of a resource operation to the PluginDefinition class.
     Expects the operation to be added to the operation registry.
