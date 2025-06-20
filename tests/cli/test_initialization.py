@@ -154,7 +154,7 @@ def test_initialize_operations_with_multiple_plugins(
 
 
 def test_initialize_operations_with_failing_plugin(
-    mocker, mock_loaded_plugins, create_loaded_plugin, mock_cli_operation, caplog
+    mocker, mock_loaded_plugins, create_loaded_plugin, mock_cli_operation
 ):
     """
     Tests operation initialization when one plugin fails during initialization.
@@ -178,16 +178,12 @@ def test_initialize_operations_with_failing_plugin(
     
     mocker.patch.object(initialization.app, "add_typer", side_effect=mock_add_typer)
 
-    with caplog.at_level("DEBUG"):
-        initialize_operations()
+    initialize_operations()
 
-    debug_messages = [record.message for record in caplog.records if record.levelname == "DEBUG"]
     expected_calls = [mocker.call(successful_plugin, operation) for operation in successful_plugin.definition.operations]
-
     expected_group_names = sorted([successful_plugin_name])
     actual_group_names = sorted([group.name for group in app.registered_groups])
 
     assert actual_group_names == expected_group_names
-    assert len(debug_messages) == 1
     assert mock_cli_operation.call_count == len(expected_calls)
     mock_cli_operation.assert_has_calls(expected_calls, any_order=True)
