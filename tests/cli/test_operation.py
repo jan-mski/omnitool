@@ -1,13 +1,13 @@
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 import click
 
 import omnitool.cli.operation as operation
-from omnitool.plugin.api.context import Context, Resource, Location, ResourceData
-from omnitool.plugin.loading.data import PluginData
-from omnitool.plugin.loading.loader import LoadedPlugin
 from omnitool.cli.operation import cli_operation, OperationExecutionError
+from omnitool.plugin.api.context import Context, Resource, Location
+from omnitool.plugin.api.operation import OperationProtocol
 
 
 @pytest.fixture
@@ -31,12 +31,12 @@ def empty_context():
 
 
 @pytest.fixture
-def sample_operation():
+def sample_operation() -> OperationProtocol:
     """
     Provides a sample operation function for testing.
     """
 
-    def test_operation(*args, context: Context, **kwargs):
+    def test_operation(*args: Any, context: Context, **kwargs: Any) -> Any:
         """Test operation docstring."""
 
         return {
@@ -46,7 +46,7 @@ def sample_operation():
             "resource_names": list(context.resources.keys() if context and context.resources else []),
         }
 
-    return test_operation
+    return cast(OperationProtocol, test_operation)
 
 
 @pytest.fixture
@@ -65,7 +65,6 @@ def mock_context_selection(questionary_mock):
 
     def _mock_selection(context_name: str):
         questionary_mock.select.return_value.ask.return_value = context_name
-        return questionary_mock
 
     return _mock_selection
 
@@ -142,6 +141,7 @@ def test_cli_operation_executes_with_provided_context_and_resources(
 
 
 def test_cli_operation_executes_with_interactive_context_selection(
+    questionary_mock,
     mock_context_selection,
     mock_resource_selection,
     create_loaded_plugin,
@@ -154,7 +154,7 @@ def test_cli_operation_executes_with_interactive_context_selection(
     Expects the original function to be executed with filtered context after prompting user for context and resource
     selection and the wrapper to return the original function's result.
     """
-    questionary_mock = mock_context_selection("test_context")
+    mock_context_selection("test_context")
     mock_resource_selection(["resource1"])
 
     contexts = {"test_context": sample_context, "empty_context": empty_context}

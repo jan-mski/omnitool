@@ -41,7 +41,7 @@ def configuration_json():
                         {"name": "Resource 2", "uri": "file:///path/to/resource2"},
                     ],
                 },
-                {"name": "Context 2", "resources": {}},
+                {"name": "Context 2", "resources": []},
             ]
         }
     )
@@ -66,7 +66,7 @@ def create_configuration_model():
                         {"name": "Resource 2", "uri": "file:///path/to/resource2"},
                     ],
                 },
-                {"name": "Context 2", "resources": {}},
+                {"name": "Context 2", "resources": []},
             ]
         )
 
@@ -148,12 +148,12 @@ def mock_plugin_module(mocker) -> callable:
 
 
 @pytest.fixture
-def mock_plugin_operation():
+def mock_plugin_operations():
     """
     Factory fixture for creating mock plugin operations.
     """
 
-    def _mock_plugin_operation(operation_names: list[str]) -> list:
+    def _mock_plugin_operations(operation_names: list[str]) -> list:
         """
         Creates mock operations for the given operation names.
 
@@ -174,11 +174,11 @@ def mock_plugin_operation():
 
         return operations
 
-    return _mock_plugin_operation
+    return _mock_plugin_operations
 
 
 @pytest.fixture
-def create_loaded_plugin(mocker, mock_plugin_module, create_plugin_definition, mock_plugin_operation) -> callable:
+def create_loaded_plugin(mock_plugin_module, create_plugin_definition, mock_plugin_operations) -> callable:
     def _create_loaded_plugin(
         plugin_name: str,
         plugin_definition: Optional[PluginDefinition] = None,
@@ -201,7 +201,7 @@ def create_loaded_plugin(mocker, mock_plugin_module, create_plugin_definition, m
             plugin_definition = create_plugin_definition(plugin_name)
 
         if operation_names is not None:
-            operations = mock_plugin_operation(operation_names)
+            operations = mock_plugin_operations(operation_names)
             plugin_definition.operations.extend(operations)
 
         module_mock = mock_plugin_module(plugin_name=plugin_name, plugin_definition=plugin_definition)

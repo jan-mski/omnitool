@@ -107,6 +107,7 @@ def test_initialize_operations_with_single_plugin(
     assert actual_group_names == expected_group_names
     assert actual_command_names == expected_command_names
 
+    assert mock_cli_operation.call_count == len(expected_calls)
     mock_cli_operation.assert_has_calls(expected_calls, any_order=True)
 
 
@@ -148,4 +149,45 @@ def test_initialize_operations_with_multiple_plugins(
 
     assert actual_group_names == expected_group_names
 
+    assert mock_cli_operation.call_count == len(expected_calls)
+    mock_cli_operation.assert_has_calls(expected_calls, any_order=True)
+
+
+def test_initialize_operations_with_failing_plugin(
+    mocker, mock_loaded_plugins, create_loaded_plugin, mock_cli_operation, caplog
+):
+    """
+    Tests operation initialization when one plugin fails during initialization.
+    Expects the failing plugin to be skipped with a debug log message, while successful plugins continue to initialize.
+    """
+    successful_plugin_name = "successful_plugin"
+    failing_plugin_name = "failing_plugin"
+    operation_names = ["start", "stop"]
+
+    successful_plugin = create_loaded_plugin(successful_plugin_name, operation_names=operation_names)
+    failing_plugin = create_loaded_plugin(failing_plugin_name, operation_names=operation_names)
+
+    mock_loaded_plugins([successful_plugin, failing_plugin])
+
+    # Mock app.add_typer to raise an exception for the failing plugin
+    original_add_typer = initialization.app.add_typer
+    def mock_add_typer(typer_instance, name=None, **kwargs):
+        if name == failing_plugin_name:
+            raise RuntimeError("Plugin initialization failed")
+        return original_add_typer(typer_instance, name=name, **kwargs)
+    
+    mocker.patch.object(initialization.app, "add_typer", side_effect=mock_add_typer)
+
+    with caplog.at_level("DEBUG"):
+        initialize_operations()
+
+    debug_messages = [record.message for record in caplog.records if record.levelname == "DEBUG"]
+    expected_calls = [mocker.call(successful_plugin, operation) for operation in successful_plugin.definition.operations]
+
+    expected_group_names = sorted([successful_plugin_name])
+    actual_group_names = sorted([group.name for group in app.registered_groups])
+
+    assert actual_group_names == expected_group_names
+    assert len(debug_messages) == 1
+    assert mock_cli_operation.call_count == len(expected_calls)
     mock_cli_operation.assert_has_calls(expected_calls, any_order=True)

@@ -19,7 +19,7 @@ class OperationExecutionError(Exception):
         super().__init__(f"Could not execute operation: {additional_info}")
 
 
-def cli_operation(plugin: LoadedPlugin, func: OperationProtocol) -> OperationProtocol:
+def cli_operation(plugin: LoadedPlugin, operation: OperationProtocol) -> OperationProtocol:
     """
     Decorator that wraps plugin operations for CLI execution.
 
@@ -35,20 +35,20 @@ def cli_operation(plugin: LoadedPlugin, func: OperationProtocol) -> OperationPro
 
     Args:
         plugin: The loaded plugin containing contexts and operations
-        func: The operation function to wrap (must accept a 'context' keyword argument)
+        operation: The operation function to wrap (must accept a 'context' keyword argument)
 
     Returns:
         A wrapped operation function that can be used as a CLI command
     """
 
-    @functools.wraps(func)
+    @functools.wraps(operation)
     def wrapper(
         *args,
         context_name: str = Option(None, "--context", help="Context name to use for resolving resources"),
         resource_names: List[str] = Option(None, "--resource", help="Resource names to operate on"),
         **kwargs,
     ):
-        operation_name = func.__name__
+        operation_name = operation.__name__
         logger.info(f"Executing operation '{operation_name}'")
 
         selected_context = _select_context(plugin, context_name)
@@ -56,7 +56,7 @@ def cli_operation(plugin: LoadedPlugin, func: OperationProtocol) -> OperationPro
         operation_context = Context(name=selected_context.name, resources=selected_resources)
 
         try:
-            result = func(*args, context=operation_context, **kwargs)
+            result = operation(*args, context=operation_context, **kwargs)
         except Exception as e:
             raise OperationExecutionError(str(e)) from e
 

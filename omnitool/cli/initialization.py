@@ -21,8 +21,11 @@ def initialize_operations():
     Creates a Typer subcommand for each plugin, and decorates operations.
     """
     for plugin in loader.loaded_plugins.values():
-        plugin_app = _create_plugin_app(plugin)
-        _initialize_plugin_operations(plugin, plugin_app)
+        try:
+            plugin_app = _create_plugin_app(plugin)
+            _initialize_plugin_operations(plugin, plugin_app)
+        except Exception as e:
+            logger.debug(f"Failed to initialize plugin '{plugin.name}': {e}")
 
 
 def _initialize_plugin_operations(plugin: LoadedPlugin, plugin_app: Typer):
