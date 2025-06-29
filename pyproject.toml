@@ -15,16 +15,18 @@ dependencies = [
     "questionary (>=2.1.0,<3.0.0)",
 ]
 
-[tool.poetry]
-packages = [
-    { include = "omnitool" },
+[project.scripts]
+omnitool = "omnitool.main:cli.app"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5,<9.0.0",
+    "pytest-mock>=3.14.0,<4.0.0",
 ]
 
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.3.5"
-pytest-mock = "^3.14.0"
-factory-boy = "^3.3.3"
-
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
