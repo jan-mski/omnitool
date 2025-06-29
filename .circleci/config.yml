@@ -20,10 +20,10 @@ jobs:
             - "SHA256:J0ZPyjQqwh3y5yLkUEfkbVYUBzaQ5yXqSbGOm7VNzFQ"
       - checkout
       - python/install-packages:
-          pkg-manager: poetry # https://circleci.com/developer/orbs/orb/circleci/python#usage-work-with-poetry
+          pkg-manager: uv # https://circleci.com/developer/orbs/orb/circleci/python#usage-work-with-uv
       - run:
           name: Run tests
-          command: poetry run pytest
+          command: uv run pytest
 
 # See: https://circleci.com/docs/configuration-reference/#workflows
 workflows:
