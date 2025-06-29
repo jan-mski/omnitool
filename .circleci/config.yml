@@ -9,8 +9,7 @@ orbs:
 # See: https://circleci.com/docs/configuration-reference/#jobs
 jobs:
   build-and-test:
-    docker:
-      - image: cimg/python:3.12.9
+    executor: python/default
     steps:
       - run: # https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/githubs-ssh-key-fingerprints
           name: Add Github's SSH key fingerprint
