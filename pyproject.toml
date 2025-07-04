@@ -3,7 +3,7 @@ name = "omnitool"
 version = "0.2.0"
 description = ""
 authors = [
-    {name = "jan-mski",email = "jm.alias.github.engross002@passmail.net"}
+    {name = "jan-mski", email = "jm.alias.github.engross002@passmail.net"}
 ]
 license = {text = "MIT"}
 readme = "README.md"

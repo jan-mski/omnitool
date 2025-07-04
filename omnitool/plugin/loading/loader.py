@@ -81,8 +81,6 @@ def _validate_definition(plugin_definition: Any) -> None:
         raise ValueError("LoadedPlugin resource_data_type must be defined when operations are present")
     if plugin_definition.resource_data_type and not plugin_definition.context_loader_function:
         raise ValueError("LoadedPlugin context_loader_function must be defined when resource_data_type is present")
-    if plugin_definition.operations is None:
-        raise ValueError("Operations cannot be None")
     _validate_operations(plugin_definition.operations)
 
 

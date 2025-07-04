@@ -1,5 +1,6 @@
 import inspect
 import logging
+from types import FunctionType
 from typing import List, Optional
 
 import click
@@ -65,12 +66,12 @@ def cli_operation(plugin: LoadedPlugin, operation: OperationFunction) -> Operati
         logger.info(f"Completed operation '{operation_name}'")
         return result
 
-    _adjust_operation_wrapper(operation, wrapper)
+    _adjust_operation_wrapper_signature(operation, wrapper)
 
     return wrapper
 
 
-def _adjust_operation_wrapper(operation: OperationFunction, wrapper) -> None:
+def _adjust_operation_wrapper_signature(operation: OperationFunction, wrapper: FunctionType) -> None:
     """
     Adjusts the wrapper function's signature to match the operation's signature
     but without the 'context' parameter and with CLI-specific parameters added.
