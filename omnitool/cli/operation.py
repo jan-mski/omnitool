@@ -1,4 +1,4 @@
-import functools
+import inspect
 import logging
 from typing import List, Optional
 
@@ -7,8 +7,11 @@ import questionary
 from typer import Option
 
 from omnitool.plugin.api.context import Context, Resource
-from omnitool.plugin.api.operation import OperationProtocol
+from omnitool.plugin.api.operation import OperationFunction
 from omnitool.plugin.loading.loader import LoadedPlugin
+
+CONTEXT_NAME_PARAM = "context_name"
+RESOURCE_NAMES_PARAM = "resource_names"
 
 
 logger = logging.getLogger(__name__)
@@ -19,7 +22,7 @@ class OperationExecutionError(Exception):
         super().__init__(f"Could not execute operation: {additional_info}")
 
 
-def cli_operation(plugin: LoadedPlugin, operation: OperationProtocol) -> OperationProtocol:
+def cli_operation(plugin: LoadedPlugin, operation: OperationFunction) -> OperationFunction:
     """
     Decorator that wraps plugin operations for CLI execution.
 
@@ -41,7 +44,6 @@ def cli_operation(plugin: LoadedPlugin, operation: OperationProtocol) -> Operati
         A wrapped operation function that can be used as a CLI command
     """
 
-    @functools.wraps(operation)
     def wrapper(
         *args,
         context_name: str = Option(None, "--context", help="Context name to use for resolving resources"),
@@ -49,7 +51,7 @@ def cli_operation(plugin: LoadedPlugin, operation: OperationProtocol) -> Operati
         **kwargs,
     ):
         operation_name = operation.__name__
-        logger.info(f"Executing operation '{operation_name}'")
+        logger.info(f"Executing operation '{operation_name}' with args: {args}, kwargs: {kwargs}")
 
         selected_context = _select_context(plugin, context_name)
         selected_resources = _select_resources(selected_context, resource_names)
@@ -63,7 +65,54 @@ def cli_operation(plugin: LoadedPlugin, operation: OperationProtocol) -> Operati
         logger.info(f"Completed operation '{operation_name}'")
         return result
 
+    _adjust_operation_wrapper(operation, wrapper)
+
     return wrapper
+
+
+def _adjust_operation_wrapper(operation: OperationFunction, wrapper) -> None:
+    """
+    Adjusts the wrapper function's signature to match the operation's signature
+    but without the 'context' parameter and with CLI-specific parameters added.
+
+    Args:
+        operation: The original operation function
+        wrapper: The wrapper function to modify
+    """
+    operation_sig = inspect.signature(operation)
+
+    original_params = [param for name, param in operation_sig.parameters.items() if name != "context"]
+
+    cli_specific_params = [
+        inspect.Parameter(
+            CONTEXT_NAME_PARAM,
+            inspect.Parameter.KEYWORD_ONLY,
+            default=Option(None, "--context", help="Context name to use for resolving resources"),
+            annotation=str,
+        ),
+        inspect.Parameter(
+            RESOURCE_NAMES_PARAM,
+            inspect.Parameter.KEYWORD_ONLY,
+            default=Option(None, "--resource", help="Resource names to operate on"),
+            annotation=List[str],
+        ),
+    ]
+
+    # Insert CLI parameters before any **kwargs parameter, or at the end
+    var_keyword_index = next(
+        (i for i, p in enumerate(original_params) if p.kind == inspect.Parameter.VAR_KEYWORD), None
+    )
+
+    if var_keyword_index is not None:
+        new_params = original_params[:var_keyword_index] + cli_specific_params + original_params[var_keyword_index:]
+    else:
+        new_params = original_params + cli_specific_params
+
+    new_signature = operation_sig.replace(parameters=new_params)
+    wrapper.__signature__ = new_signature
+    wrapper.__name__ = operation.__name__
+    wrapper.__doc__ = operation.__doc__
+    wrapper.__wrapped__ = operation
 
 
 def _select_context(plugin: LoadedPlugin, context_name: Optional[str] = None) -> Context:
@@ -80,6 +129,8 @@ def _select_context(plugin: LoadedPlugin, context_name: Optional[str] = None) ->
         logger.info(f"Using default context: {context_name}")
     else:
         context_name = questionary.select("Select a context:", choices=available_contexts).ask()
+        if context_name is None:
+            raise click.ClickException("No context selected")
 
     return plugin.data.contexts[context_name]
 

@@ -1,6 +1,9 @@
 import logging
+import inspect
 from dataclasses import dataclass
+from typing import Any, Optional
 
+from omnitool.plugin.api.operation import OperationFunction
 from omnitool.plugin.loading import finder
 from omnitool.plugin.loading.configuration import load_configuration, PluginConfiguration
 from omnitool.plugin.loading.data import load_data, PluginData
@@ -18,6 +21,7 @@ class LoadedPlugin:
     """
     Represents a loaded plugin.
     """
+
     data: PluginData
     definition: PluginDefinition
     module: PluginModule
@@ -50,8 +54,7 @@ def load_plugins() -> None:
                 loaded_plugins[loaded_plugin.name] = loaded_plugin
                 logger.debug(f"LoadedPlugin '{loaded_plugin.name}' loaded from '{plugin_module.source}'")
         except Exception as e:
-            logger.debug(f"Failed to load plugin '{plugin_module.name}' "
-                         f"from {plugin_module.source}", exc_info=e)
+            logger.debug(f"Failed to load plugin '{plugin_module.name}' from {plugin_module.source}", exc_info=e)
 
     logger.debug(f"Plugins loaded: {list(loaded_plugins.keys())}")
 
@@ -71,10 +74,26 @@ def _load_definition(plugin_module: PluginModule) -> PluginDefinition:
     return plugin_definition
 
 
-def _validate_definition(plugin_definition: PluginDefinition) -> None:
+def _validate_definition(plugin_definition: Any) -> None:
     if not isinstance(plugin_definition, PluginDefinition):
         raise ValueError("LoadedPlugin definition must be of type PluginDefinition")
     if plugin_definition.operations and not plugin_definition.resource_data_type:
         raise ValueError("LoadedPlugin resource_data_type must be defined when operations are present")
     if plugin_definition.resource_data_type and not plugin_definition.context_loader_function:
         raise ValueError("LoadedPlugin context_loader_function must be defined when resource_data_type is present")
+    if plugin_definition.operations is None:
+        raise ValueError("Operations cannot be None")
+    _validate_operations(plugin_definition.operations)
+
+
+def _validate_operations(operations: list[OperationFunction]) -> None:
+    for operation in operations:
+        if not callable(operation):
+            raise ValueError(f"Operation {operation} must be a callable function")
+        
+        try:
+            signature = inspect.signature(operation)
+            if "context" not in signature.parameters:
+                raise ValueError(f"Operation {operation.__name__} must have a 'context' parameter")
+        except (ValueError, AttributeError) as e:
+            raise ValueError(f"Cannot inspect operation {operation}: {e}")

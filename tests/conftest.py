@@ -58,7 +58,7 @@ def create_configuration_model():
 
     def _create_configuration_model():
         return PluginConfiguration(
-            contexts=[
+            contexts=[  # type: ignore
                 {
                     "name": "Context 1",
                     "resources": [
@@ -82,7 +82,7 @@ def resource_data(resource_data_type) -> ResourceData:
 
 
 @pytest.fixture
-def context_loader_function(resource_data) -> callable:
+def context_loader_function(resource_data):
     """
     Provides a mock context loader function that initializes resources with the given resource data type.
     """
@@ -98,7 +98,7 @@ def context_loader_function(resource_data) -> callable:
 
 
 @pytest.fixture
-def create_plugin_definition(resource_data_type, context_loader_function) -> callable:
+def create_plugin_definition(resource_data_type, context_loader_function):
     """
     Creates a factory function that returns a PluginDefinition object with the given resource data type and context loader function.
 
@@ -124,8 +124,8 @@ def create_plugin_definition(resource_data_type, context_loader_function) -> cal
 
 
 @pytest.fixture
-def mock_plugin_module(mocker) -> callable:
-    def _mock_plugin_module(plugin_name: str, plugin_definition: PluginDefinition) -> mocker.MagicMock:
+def mock_plugin_module(mocker):
+    def _mock_plugin_module(plugin_name: str, plugin_definition: PluginDefinition):
         """
         Creates a mock PluginModule object for testing.
 
@@ -178,7 +178,7 @@ def mock_plugin_operations():
 
 
 @pytest.fixture
-def create_loaded_plugin(mock_plugin_module, create_plugin_definition, mock_plugin_operations) -> callable:
+def create_loaded_plugin(mock_plugin_module, create_plugin_definition, mock_plugin_operations):
     def _create_loaded_plugin(
         plugin_name: str,
         plugin_definition: Optional[PluginDefinition] = None,
@@ -202,12 +202,12 @@ def create_loaded_plugin(mock_plugin_module, create_plugin_definition, mock_plug
 
         if operation_names is not None:
             operations = mock_plugin_operations(operation_names)
-            plugin_definition.operations.extend(operations)
+            plugin_definition.operations.extend(operations)  # type: ignore
 
         module_mock = mock_plugin_module(plugin_name=plugin_name, plugin_definition=plugin_definition)
 
         plugin_data = PluginData(contexts or {})
 
-        return LoadedPlugin(data=plugin_data, definition=plugin_definition, module=module_mock)
+        return LoadedPlugin(data=plugin_data, definition=plugin_definition, module=module_mock)  # type: ignore
 
     return _create_loaded_plugin

@@ -7,7 +7,7 @@ import click
 import omnitool.cli.operation as operation
 from omnitool.cli.operation import cli_operation, OperationExecutionError
 from omnitool.plugin.api.context import Context, Resource, Location
-from omnitool.plugin.api.operation import OperationProtocol
+from omnitool.plugin.api.operation import OperationFunction
 
 
 @pytest.fixture
@@ -31,7 +31,7 @@ def empty_context():
 
 
 @pytest.fixture
-def sample_operation() -> OperationProtocol:
+def sample_operation() -> OperationFunction:
     """
     Provides a sample operation function for testing.
     """
@@ -46,7 +46,7 @@ def sample_operation() -> OperationProtocol:
             "resource_names": list(context.resources.keys() if context and context.resources else []),
         }
 
-    return cast(OperationProtocol, test_operation)
+    return cast(OperationFunction, test_operation)
 
 
 @pytest.fixture
@@ -108,8 +108,7 @@ def assert_resource_selection_calls(questionary_mock, expected_calls: int):
 
 def test_cli_operation_decorator(create_loaded_plugin, sample_context, empty_context, sample_operation):
     """
-    Tests that the decorator preserves the original function's metadata using functools.wraps and returns
-    a callable function.
+    Tests that the decorator preserves the original function's metadata and returns a callable function.
     Expects the wrapped function to have the same __name__, __doc__, and other attributes as the original.
     """
     contexts = {"test_context": sample_context, "empty_context": empty_context}

@@ -1,27 +1,7 @@
 from dataclasses import dataclass
-from typing import Optional, Protocol, Any, Callable
+from typing import Optional, Any, Callable
 
-from omnitool.plugin.api.context import Context
-
-
-class OperationProtocol(Protocol):
-    def __call__(self, *args: Any, context: Context, **kwargs: Any) -> Any:
-        """
-        Protocol for plugin operation functions that can be registered in operation groups.
-
-        Operation functions must accept a context as keyword-only argument, along with any other positional
-        and keyword arguments.
-        The context will contain only the resources that are selected for the operation.
-
-        Args:
-            *args: Variable positional arguments passed to the operation
-            context: Context on which the operation is being performed, with the selected resources
-            **kwargs: Additional keyword arguments passed to the operation
-
-        Returns:
-            Result of the operation call
-        """
-        ...
+OperationFunction = Callable[..., Any]
 
 
 @dataclass
@@ -30,11 +10,11 @@ class PluginOperationGroup:
     Registry for plugin operations.
     """
 
-    root_operation_name: str
+    root_operation_name: Optional[str]
     subgroups: list["PluginOperationGroup"]
-    operations: list[OperationProtocol]
+    operations: list[OperationFunction]
 
-    def __init__(self, name: str = None) -> None:
+    def __init__(self, name: Optional[str] = None) -> None:
         self.root_operation_name = name
         self.subgroups = []
         self.operations = []
@@ -52,10 +32,13 @@ class PluginOperationGroup:
         self.subgroups.append(subgroup)
 
     def operation(
-        self, operation: Optional[OperationProtocol] = None
-    ) -> OperationProtocol | Callable[[OperationProtocol], OperationProtocol]:
+        self, operation: Optional[OperationFunction] = None
+    ) -> OperationFunction | Callable[[OperationFunction], OperationFunction]:
         """
         Decorator to register a method as a resource operation.
+
+        Operation functions should accept a context as keyword argument named 'context', along with any other positional
+        and keyword arguments. The context will contain only the resources that are selected for the operation.
 
         Can be used in two ways:
             - @definition.operation
@@ -68,7 +51,7 @@ class PluginOperationGroup:
             The registered function, unchanged, or a decorator function if called with parentheses
         """
 
-        def wrapper(op: OperationProtocol):
+        def wrapper(op: Optional[OperationFunction] = None):
             if op is None:
                 raise ValueError("Function cannot be None")
 

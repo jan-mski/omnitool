@@ -67,7 +67,6 @@ name = "omnitool"
 version = "0.2.0"
 source = { editable = "." }
 dependencies = [
-    { name = "omnitool-git-plugin" },
     { name = "pydantic-settings" },
     { name = "questionary" },
     { name = "typer" },
@@ -81,32 +80,16 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "omnitool-git-plugin", git = "ssh://git@github.com/jan-mski/omnitool-git-plugin.git?rev=omn-17" },
     { name = "pydantic-settings", specifier = ">=2.8.1,<3.0.0" },
     { name = "questionary", specifier = ">=2.1.0,<3.0.0" },
     { name = "typer", specifier = ">=0.16.0,<0.17.0" },
 ]
+provides-extras = ["git-plugin"]
 
 [package.metadata.requires-dev]
 dev = [
     { name = "pytest", specifier = ">=8.3.5,<9.0.0" },
     { name = "pytest-mock", specifier = ">=3.14.0,<4.0.0" },
-]
-
-[[package]]
-name = "omnitool-git-plugin"
-version = "0.1.0"
-source = { git = "ssh://git@github.com/jan-mski/omnitool-git-plugin.git?rev=omn-17#7d9a94e23c65b76ec10dca9bea81eebe4e088c79" }
-dependencies = [
-    { name = "omnitool-plugin-base" },
-]
-
-[[package]]
-name = "omnitool-plugin-base"
-version = "0.1.0"
-source = { git = "ssh://git@github.com/jan-mski/omnitool-plugin-base.git?rev=main#0c33dd17052621738a7db99d00539109904c854a" }
-dependencies = [
-    { name = "pydantic" },
 ]
 
 [[package]]

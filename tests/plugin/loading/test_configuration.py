@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional
 
 import pytest
 
@@ -8,7 +9,7 @@ from omnitool.plugin.loading.configuration import (PluginConfiguration, load_con
                                                    PLUGIN_CONFIGURATION_FILE_NAME)
 
 @pytest.fixture
-def create_configuration_file(configuration_json) -> callable:
+def create_configuration_file(configuration_json):
     def _create_configuration_file(plugin_configurations_dir: Path, plugin_name: str, write: bool = True) -> Path:
         """
         Creates a temporary configuration file for testing.
@@ -33,8 +34,8 @@ def create_configuration_file(configuration_json) -> callable:
 
 
 @pytest.fixture
-def mock_plugin_configurations(mocker, tmp_path) -> callable:
-    def _mock_plugin_configurations(plugin_names: list[str] = None, create_dirs: bool = True) -> Path:
+def mock_plugin_configurations(mocker, tmp_path):
+    def _mock_plugin_configurations(plugin_names: Optional[list[str]] = None, create_dirs: bool = True) -> Path:
         """
         Sets up plugin configuration paths for testing.
 
