@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional, Any, Callable
+from typing import Any, Callable, Optional
 
 OperationFunction = Callable[..., Any]
 

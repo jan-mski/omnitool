@@ -1,7 +1,7 @@
 import logging
 import inspect
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any
 
 from omnitool.plugin.api.operation import OperationFunction
 from omnitool.plugin.loading import finder
@@ -88,7 +88,7 @@ def _validate_operations(operations: list[OperationFunction]) -> None:
     for operation in operations:
         if not callable(operation):
             raise ValueError(f"Operation {operation} must be a callable function")
-        
+
         try:
             signature = inspect.signature(operation)
             if "context" not in signature.parameters:
