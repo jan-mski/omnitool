@@ -15,7 +15,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-git-plugin = []
+git-plugin = [
+    "dulwich (>=0.22.1,<0.23.0)"
+]
 
 [project.scripts]
 omnitool = "omnitool.main:cli.app"
