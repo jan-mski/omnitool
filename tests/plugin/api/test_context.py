@@ -2,20 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from omnitool.plugin.api.context import ResourceData, parse_uri, Location
-
-
-def test_resource_data_subclass():
-    """
-    Test that a subclass of ResourceData is an instance of ResourceData.
-    """
-
-    class ResourceDataStub(ResourceData):
-        pass
-
-    stub = ResourceDataStub()
-
-    assert isinstance(stub, ResourceData)
+from omnitool.plugin.api.context import parse_uri, Location
 
 
 def test_create_location_valid_file_uri():

@@ -4,7 +4,7 @@ from typing import Optional
 import pytest
 
 from omnitool.plugin.loading.configuration import PluginConfiguration
-from omnitool.plugin.api.context import ResourceData, Context
+from omnitool.plugin.api.context import Context
 from omnitool.plugin.api.definition import PluginDefinition
 from omnitool.plugin.loading.location import PluginModule
 from omnitool.plugin.loading.loader import LoadedPlugin
@@ -14,10 +14,10 @@ from omnitool.plugin.loading.data import PluginData
 @pytest.fixture
 def resource_data_type():
     """
-    Provides a ResourceData type for testing purposes.
+    Provides a resource data type for testing purposes.
     """
 
-    class ResourceDataStub(ResourceData):
+    class ResourceDataStub:
         pass
 
     return ResourceDataStub
@@ -74,9 +74,9 @@ def create_configuration_model():
 
 
 @pytest.fixture
-def resource_data(resource_data_type) -> ResourceData:
+def resource_data(resource_data_type):
     """
-    Provides a ResourceData instance for testing purposes.
+    Provides a resource data instance for testing purposes.
     """
     return resource_data_type()
 

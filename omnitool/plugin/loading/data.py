@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 from omnitool.plugin.loading.configuration import PluginConfiguration
 from omnitool.plugin.loading.configuration import ContextConfiguration, ResourceConfiguration
-from omnitool.plugin.api.context import ResourceData, Context, Resource, parse_uri
+from omnitool.plugin.api.context import Context, Resource, parse_uri
 from omnitool.plugin.api.definition import PluginDefinition, ContextLoaderProtocol
 
 

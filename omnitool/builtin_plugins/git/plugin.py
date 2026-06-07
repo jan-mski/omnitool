@@ -1,11 +1,11 @@
 import logging
 
-from omnitool.plugin.api.context import Context, ResourceData
+from omnitool.plugin.api.context import Context
 from omnitool.plugin.api.definition import PluginDefinition
 
 logger = logging.getLogger(__name__)
 
-class GitRepository(ResourceData):
+class GitRepository:
     pass
 
 

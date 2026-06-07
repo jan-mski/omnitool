@@ -1,6 +1,6 @@
 from typing import Type, Protocol, Callable
 
-from omnitool.plugin.api.context import ResourceData, Context
+from omnitool.plugin.api.context import Context
 from omnitool.plugin.api.operation import PluginOperationGroup
 
 
@@ -23,16 +23,11 @@ class PluginDefinition(PluginOperationGroup):
     Base class for all plugin definitions.
     """
 
-    resource_data_type: Type[ResourceData]
+    resource_data_type: Type
     context_loader_function: ContextLoaderProtocol = None
 
-    def __init__(self, *, root_operation_name: str, resource_data_type: Type[ResourceData] = None) -> None:
+    def __init__(self, *, root_operation_name: str, resource_data_type: Type = None) -> None:
         super().__init__(root_operation_name)
-
-        if resource_data_type and (
-                not issubclass(resource_data_type, ResourceData) or
-                resource_data_type is ResourceData):
-            raise ValueError(f"Resource type must be a subclass of ResourceData")
 
         self.resource_data_type = resource_data_type
 
