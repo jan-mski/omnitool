@@ -1,12 +1,20 @@
 import logging
+from pathlib import Path
 
+import pygit2
 from omnitool.plugin.api.context import Context
 from omnitool.plugin.api.definition import PluginDefinition
 
+
 logger = logging.getLogger(__name__)
 
+
 class GitRepository:
-    pass
+    def __init__(self, path: Path) -> None:
+        self._repo = pygit2.Repository(path)
+
+    def checkout(self, branch: str) -> None:
+        self._repo.checkout(self._repo.branches[branch])
 
 
 definition = PluginDefinition(root_operation_name="git", resource_data_type=GitRepository)
@@ -14,15 +22,12 @@ definition = PluginDefinition(root_operation_name="git", resource_data_type=GitR
 
 @definition.operation
 def checkout(branch: str, context: Context) -> None:
-    """
-    Checks out a branch in the git repository.
-    """
-    logger.info(f"Checking out branch: {branch}")
+    for resource in context.resources.values():
+        repo: GitRepository = resource.data
+        repo.checkout(branch)
 
 
 @definition.context_loader
 def load_context(context: Context) -> None:
-    """
-    Loads the context for the git plugin.
-    """
-    logger.info("Loading context for git plugin")
+    for resource in context.resources.values():
+        resource.data = GitRepository(resource.location.path)
