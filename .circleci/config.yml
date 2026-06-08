@@ -3,14 +3,13 @@ version: 2.1
 # See: https://circleci.com/docs/orb-intro/
 orbs:
   # See the orb documentation here: https://circleci.com/developer/orbs/orb/circleci/python
-  python: circleci/python@3.0.0
+  python: circleci/python@3.1.0
 
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/configuration-reference/#jobs
 jobs:
   build-and-test:
-    docker:
-      - image: cimg/python:3.12.9
+    executor: python/default
     steps:
       - run: # https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/githubs-ssh-key-fingerprints
           name: Add Github's SSH key fingerprint
@@ -20,10 +19,10 @@ jobs:
             - "SHA256:J0ZPyjQqwh3y5yLkUEfkbVYUBzaQ5yXqSbGOm7VNzFQ"
       - checkout
       - python/install-packages:
-          pkg-manager: poetry # https://circleci.com/developer/orbs/orb/circleci/python#usage-work-with-poetry
+          pkg-manager: uv # https://circleci.com/developer/orbs/orb/circleci/python#usage-work-with-uv
       - run:
           name: Run tests
-          command: poetry run pytest
+          command: uv run pytest
 
 # See: https://circleci.com/docs/configuration-reference/#workflows
 workflows:
