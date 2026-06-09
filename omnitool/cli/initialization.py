@@ -33,6 +33,7 @@ def _initialize_plugin_operations(plugin: LoadedPlugin, plugin_app: Typer):
     for operation in plugin.definition.operations:
         decorated_operation = cli_operation(plugin, operation)
         plugin_app.command(decorated_operation.__name__)(decorated_operation)
+        logger.debug(f"Initialized plugin '{plugin.name}' operation '{decorated_operation.__name__}'")
 
 
 def _create_plugin_app(plugin: LoadedPlugin) -> Typer:

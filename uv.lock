@@ -102,6 +102,7 @@ name = "omnitool"
 version = "0.2.0"
 source = { editable = "." }
 dependencies = [
+    { name = "prompt-toolkit" },
     { name = "pydantic-settings" },
     { name = "pygit2" },
     { name = "questionary" },
@@ -116,6 +117,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "prompt-toolkit", specifier = "<3.0.48" },
     { name = "pydantic-settings", specifier = "==2.10.1" },
     { name = "pygit2", specifier = "==1.19.2" },
     { name = "questionary", specifier = "==2.1.0" },
@@ -148,14 +150,14 @@ wheels = [
 
 [[package]]
 name = "prompt-toolkit"
-version = "3.0.51"
+version = "3.0.47"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "wcwidth" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/bb/6e/9d084c929dfe9e3bfe0c6a47e31f78a25c54627d64a66e884a8bf5474f1c/prompt_toolkit-3.0.51.tar.gz", hash = "sha256:931a162e3b27fc90c86f1b48bb1fb2c528c2761475e57c9c06de13311c7b54ed", size = 428940, upload-time = "2025-04-15T09:18:47.731Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/47/6d/0279b119dafc74c1220420028d490c4399b790fc1256998666e3a341879f/prompt_toolkit-3.0.47.tar.gz", hash = "sha256:1e1b29cb58080b1e69f207c893a1a7bf16d127a5c30c9d17a25a5d77792e5360", size = 425859, upload-time = "2024-06-10T11:02:14.045Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ce/4f/5249960887b1fbe561d9ff265496d170b55a735b76724f10ef19f9e40716/prompt_toolkit-3.0.51-py3-none-any.whl", hash = "sha256:52742911fde84e2d423e2f9a4cf1de7d7ac4e51958f648d9540e0fb8db077b07", size = 387810, upload-time = "2025-04-15T09:18:44.753Z" },
+    { url = "https://files.pythonhosted.org/packages/e8/23/22750c4b768f09386d1c3cc4337953e8936f48a888fa6dddfb669b2c9088/prompt_toolkit-3.0.47-py3-none-any.whl", hash = "sha256:0d7bfa67001d5e39d02c224b663abc33687405033a8c422d0d675a5a13361d10", size = 386411, upload-time = "2024-06-10T11:02:10.477Z" },
 ]
 
 [[package]]

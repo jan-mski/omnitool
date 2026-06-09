@@ -12,6 +12,7 @@ dependencies = [
     "pydantic-settings==2.10.1",
     "typer==0.16.0",
     "questionary==2.1.0",
+    "prompt-toolkit<3.0.48",
     "pygit2==1.19.2",
 ]
 
