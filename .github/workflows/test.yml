@@ -3,9 +3,8 @@ name: Test
 on:
   pull_request:
     branches:
-      - main
-      - feature/**
-      - bugfix/**
+      - develop
+      - omn-**
     paths-ignore:
       - '**.md'
       - '.gitignore'
