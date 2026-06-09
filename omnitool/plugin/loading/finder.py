@@ -30,6 +30,7 @@ class PluginEntryPoint(PluginModule):
     def load(self) -> PluginDefinition:
         return self.entry_point.load()
 
+
 def find_plugins() -> list[PluginModule]:
     """
     Finds all available plugins.

@@ -1,7 +1,6 @@
-from abc import ABC
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 from urllib.parse import urlparse
 
 
@@ -14,20 +13,13 @@ class Location:
 
 
 @dataclass
-class ResourceData(ABC):
-    """
-    Base class for all context resources.
-    """
-
-
-@dataclass
 class Resource:
     """
     Represents a resource in a context.
     """
     name: str
     location: Location
-    data: Optional[ResourceData] = None
+    data: Optional[Any] = None
 
 
 @dataclass

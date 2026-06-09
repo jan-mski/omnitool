@@ -1,6 +1,7 @@
 import functools
+import inspect
 import logging
-from typing import List, Optional
+from typing import List, Optional, Callable, Any
 
 import click
 import questionary
@@ -49,7 +50,7 @@ def cli_operation(plugin: LoadedPlugin, operation: OperationProtocol) -> Operati
         **kwargs,
     ):
         operation_name = operation.__name__
-        logger.info(f"Executing operation '{operation_name}'")
+        logger.info(f"Executing operation '{operation_name}' with args: {args}, kwargs: {kwargs}")
 
         selected_context = _select_context(plugin, context_name)
         selected_resources = _select_resources(selected_context, resource_names)
@@ -62,8 +63,54 @@ def cli_operation(plugin: LoadedPlugin, operation: OperationProtocol) -> Operati
 
         logger.info(f"Completed operation '{operation_name}'")
         return result
+    
+    _adjust_operation_wrapper(operation, wrapper)
 
     return wrapper
+
+
+def _adjust_operation_wrapper(operation: OperationProtocol, wrapper: Callable[..., Any]) -> None:
+    """
+    Adjusts the wrapper function's signature to match the operation's signature
+    but without the 'context' parameter and with CLI-specific parameters added.
+    
+    Args:
+        operation: The original operation function
+        wrapper: The wrapper function to modify
+    """
+    operation_sig = inspect.signature(operation)
+    
+    new_params = []
+    var_keyword = None
+    for param_name, param in operation_sig.parameters.items():
+        if param_name == 'context':
+            continue
+        if param.kind == inspect.Parameter.VAR_KEYWORD:
+            var_keyword = param
+        else:
+            new_params.append(param)
+    
+    context_name_param = inspect.Parameter(
+        "context_name",
+        inspect.Parameter.KEYWORD_ONLY,
+        default=Option(None, "--context", help="Context name to use for resolving resources"),
+        annotation=str
+    )
+    
+    resource_names_param = inspect.Parameter(
+        "resource_names",
+        inspect.Parameter.KEYWORD_ONLY,
+        default=Option(None, "--resource", help="Resource names to operate on"),
+        annotation=List[str]
+    )
+    
+    new_params.extend([context_name_param, resource_names_param])
+    
+    if var_keyword is not None:
+        new_params.append(var_keyword)
+    
+    new_signature = operation_sig.replace(parameters=new_params)
+    wrapper.__signature__ = new_signature
 
 
 def _select_context(plugin: LoadedPlugin, context_name: Optional[str] = None) -> Context:

@@ -84,6 +84,7 @@ def load_configuration(plugin_name: str) -> PluginConfiguration:
 
     if configuration_file.exists():
         configuration_json = configuration_file.read_text(encoding="utf-8")
+        logger.debug(f"Configuration loaded successfully: \n{configuration_json}")
         configuration = PluginConfiguration.model_validate_json(configuration_json)
         logger.debug("Configuration file read successfully")
     else:

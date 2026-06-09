@@ -1,4 +1,5 @@
 import logging
+import os
 import sys
 
 from omnitool import settings, cli
@@ -7,8 +8,10 @@ from omnitool.plugin.loading import loader
 
 logger = logging.getLogger(__name__)
 
+log_level = logging.DEBUG if os.environ.get("DEBUG", "").lower() == "true" else logging.INFO
+
 logging.basicConfig(
-    level=logging.INFO,
+    level=log_level,
     format="[%(asctime)s] [%(levelname)s] %(message)s",
     handlers=[logging.StreamHandler(stream=sys.stdout)],
 )

@@ -29,8 +29,6 @@ class ConfiguredPlugins(BaseModel):
 
 
 class OmnitoolSettings(BaseSettings, abc.ABC):
-    model_config = SettingsConfigDict(json_file=OMNITOOL_SETTINGS_FILE_PATH)
-
     plugins: ConfiguredPlugins
 
     @property

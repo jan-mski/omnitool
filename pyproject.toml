@@ -3,28 +3,31 @@ name = "omnitool"
 version = "0.2.0"
 description = ""
 authors = [
-    {name = "jan-mski",email = "36985396+jan-mski@users.noreply.github.com"}
+    { name = "jan-mski", email = "36985396+jan-mski@users.noreply.github.com" }
 ]
-license = {text = "MIT"}
+license = { text = "MIT" }
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.12,<=3.13"
 dependencies = [
-    "pydantic-settings (>=2.8.1,<3.0.0)",
-    "omnitool-git-plugin @ git+ssh://git@github.com/jan-mski/omnitool-git-plugin.git@omn-17",
-    "typer (>=0.16.0,<0.17.0)",
-    "questionary (>=2.1.0,<3.0.0)",
+    "pydantic-settings==2.10.1",
+    "typer==0.16.0",
+    "questionary==2.1.0",
+    "pygit2==1.19.2",
 ]
 
 [project.scripts]
 omnitool = "omnitool.main:cli.app"
+
+[project.entry-points."omnitool.plugin"]
+git = "omnitool.builtin_plugins.git.plugin:definition"
 
 [tool.hatch.metadata]
 allow-direct-references = true
 
 [dependency-groups]
 dev = [
-    "pytest>=8.3.5,<9.0.0",
-    "pytest-mock>=3.14.0,<4.0.0",
+    "pytest==8.4.1",
+    "pytest-mock==3.14.1",
 ]
 
 [build-system]
