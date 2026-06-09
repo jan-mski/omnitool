@@ -11,6 +11,7 @@ It was originally built to help a manage too many microservices - doing git oper
 ```bash
 cd <cloned-repository-path>
 pipx install .
+omnitool --install-completion  # installs CLI completions
 ```
 
 ## Usage
